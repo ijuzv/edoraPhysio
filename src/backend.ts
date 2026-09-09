@@ -422,15 +422,6 @@ export function createApi(
           }
 
           const input = await readJson(req);
-          const validated =
-            path === '/api/bookings'
-              ? validateBooking(input)
-              : validateFeedback(input);
-
-          if ('error' in validated) {
-            return json(400, { error: validated.error });
-          }
-
           const key = req.headers.get('idempotency-key');
           if (typeof key !== 'string' || !/^[\w-]{16,100}$/.test(key)) {
             return json(400, {
@@ -440,7 +431,11 @@ export function createApi(
 
           if (path === '/api/bookings') {
             // Handle appointment booking
-            const bookingData = validated.data as Record<string, unknown>;
+            const validated = validateBooking(input);
+            if ('error' in validated) {
+              return json(400, { error: validated.error });
+            }
+            const bookingData = validated.data;
 
             // Check if already processed
             const existing = await getAppointmentByIdempotencyKey(key);
@@ -459,15 +454,15 @@ export function createApi(
 
             // Insert into database
             const insertResult = await insertAppointment({
-              patient_name: bookingData.name as string,
-              patient_age: bookingData.age as number,
-              patient_phone: bookingData.phone as string,
-              patient_location: bookingData.location as string,
+              patient_name: bookingData.name,
+              patient_age: bookingData.age,
+              patient_phone: bookingData.phone,
+              patient_location: bookingData.location,
               consultation_type:
-                (bookingData.type as string) === 'home' ? 'home' : 'online',
-              preferred_date: bookingData.date as string,
-              preferred_time: bookingData.time as string,
-              privacy_consent: bookingData.consent as boolean,
+                bookingData.type === 'home' ? 'home' : 'online',
+              preferred_date: bookingData.date,
+              preferred_time: bookingData.time,
+              privacy_consent: bookingData.consent,
               idempotency_key: key,
             });
 
@@ -479,11 +474,11 @@ export function createApi(
 
             // Send WhatsApp confirmation
             const whatsappResult = await sendAppointmentConfirmation(
-              bookingData.name as string,
-              bookingData.phone as string,
-              bookingData.date as string,
-              bookingData.time as string,
-              (bookingData.type as string) === 'home' ? 'home' : 'online',
+              bookingData.name,
+              bookingData.phone,
+              bookingData.date,
+              bookingData.time,
+              bookingData.type === 'home' ? 'home' : 'online',
             );
 
             // Update appointment with WhatsApp status
@@ -504,7 +499,11 @@ export function createApi(
 
           if (path === '/api/feedback') {
             // Handle feedback
-            const feedbackData = validated.data as Record<string, unknown>;
+            const validated = validateFeedback(input);
+            if ('error' in validated) {
+              return json(400, { error: validated.error });
+            }
+            const feedbackData = validated.data;
 
             // Check if already processed
             const existing = await getFeedbackByIdempotencyKey(key);
@@ -523,9 +522,9 @@ export function createApi(
 
             // Insert feedback
             const insertResult = await insertFeedback({
-              rating: feedbackData.rating as number,
-              message: feedbackData.message as string,
-              consent: feedbackData.consent as boolean,
+              rating: feedbackData.rating,
+              message: feedbackData.message,
+              consent: feedbackData.consent,
               idempotency_key: key,
             });
 

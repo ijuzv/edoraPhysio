@@ -35,23 +35,26 @@ interface FeedbackUpdate {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error(
-    'Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY',
-  );
-}
+const getSupabase = () => {
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error(
+      'Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY',
+    );
+  }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+};
 
 export async function insertAppointment(
   data: AppointmentInsert,
 ): Promise<{ id: string; error?: string }> {
   try {
+    const supabase = getSupabase();
     const { data: result, error } = await supabase
       .from('appointments')
       .insert([data])
@@ -74,6 +77,7 @@ export async function updateAppointmentWhatsApp(
   update: AppointmentUpdate,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const supabase = getSupabase();
     const { error } = await supabase
       .from('appointments')
       .update({
@@ -97,6 +101,7 @@ export async function getAppointmentByIdempotencyKey(
   key: string,
 ): Promise<{ id: string | null; error?: string }> {
   try {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from('appointments')
       .select('id')
@@ -119,6 +124,7 @@ export async function insertFeedback(
   data: FeedbackInsert,
 ): Promise<{ id: string; error?: string }> {
   try {
+    const supabase = getSupabase();
     const { data: result, error } = await supabase
       .from('feedback')
       .insert([data])
@@ -141,6 +147,7 @@ export async function updateFeedbackWhatsApp(
   update: FeedbackUpdate,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const supabase = getSupabase();
     const { error } = await supabase
       .from('feedback')
       .update({
@@ -164,6 +171,7 @@ export async function getFeedbackByIdempotencyKey(
   key: string,
 ): Promise<{ id: string | null; error?: string }> {
   try {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from('feedback')
       .select('id')
@@ -181,4 +189,4 @@ export async function getFeedbackByIdempotencyKey(
   }
 }
 
-export default supabase;
+export default getSupabase;
