@@ -1,1 +1,1 @@
-export default {trailingSlash:true,poweredByHeader:false};
+export default { trailingSlash: true, poweredByHeader: false };
