@@ -249,6 +249,7 @@ export function createApi(
     fetch: globalThis.fetch,
     ...options,
   };
+  
 
   let siteUrl = '';
   try {
