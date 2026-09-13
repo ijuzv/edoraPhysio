@@ -64,6 +64,38 @@ export default function Interactions(): null {
       { passive: true },
     );
 
+    // Subtle reveal motion for content sections.
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+    let revealObserver: IntersectionObserver | null = null;
+
+    if (!prefersReducedMotion && 'IntersectionObserver' in window) {
+      const revealItems = document.querySelectorAll(
+        '.section, .page-hero, .trust-strip, .contact-banner, .service, .steps li, .pillar-card',
+      );
+
+      revealObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              revealObserver?.unobserve(entry.target);
+            }
+          });
+        },
+        {
+          rootMargin: '0px 0px -12% 0px',
+          threshold: 0.08,
+        },
+      );
+
+      revealItems.forEach((item) => {
+        item.classList.add('reveal-ready');
+        revealObserver?.observe(item);
+      });
+    }
+
     // Form handling helpers
     const booking = document.querySelector(
       '#booking-form',
@@ -483,6 +515,7 @@ export default function Interactions(): null {
     }
 
     return () => {
+      revealObserver?.disconnect();
       controller.abort();
     };
   }, []);
