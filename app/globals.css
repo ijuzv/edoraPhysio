@@ -107,7 +107,7 @@ p {
   width: calc(100% - 112px);
 }
 .section {
-  padding-block: 50px;
+  padding-block: 46px;
 }
 .eyebrow {
   font-size: 10px;
@@ -228,12 +228,13 @@ p {
 .header-inner nav {
   display: flex;
   align-items: center;
-  gap: 36px;
+  gap: 34px;
   font-size: 12px;
 }
 .header-inner nav a {
   position: relative;
   padding-block: 8px;
+  white-space: nowrap;
 }
 .header-inner nav a:after {
   content: "";
@@ -259,7 +260,8 @@ p {
   border-bottom: 1px solid #82988e;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
+  flex-shrink: 0;
 }
 .menu-toggle {
   display: none;
@@ -282,21 +284,21 @@ p {
   background-image: url("/assets/photos/care-01.jpg");
   background-size: cover;
   background-position: center 42%;
-  opacity: .16;
-  filter: saturate(.78) contrast(.92);
+  opacity: .46;
+  filter: saturate(.9) contrast(1);
   transform: scale(1.03);
 }
 .hero:after {
   z-index: -1;
   background:
-    linear-gradient(90deg, rgba(248, 248, 245, .95) 0%, rgba(248, 248, 245, .78) 43%, rgba(248, 248, 245, .92) 100%),
-    radial-gradient(circle at 80% 35%, rgba(118, 139, 110, .18), transparent 40%);
+    linear-gradient(90deg, rgba(248, 248, 245, .84) 0%, rgba(248, 248, 245, .48) 44%, rgba(248, 248, 245, .72) 100%),
+    radial-gradient(circle at 78% 38%, rgba(118, 139, 110, .08), transparent 44%);
 }
 .hero-inner {
   display: grid;
   grid-template-columns: 1.08fr 1fr;
-  column-gap: 80px;
-  padding-top: 50px;
+  column-gap: 64px;
+  padding-top: 44px;
   position: relative;
   border-block: 1px solid var(--line);
 }
@@ -358,9 +360,9 @@ p {
 .philosophy {
   display: grid;
   grid-template-columns: 1.08fr 1fr;
-  gap: 80px;
-  padding-top: 55px;
-  padding-bottom: 55px;
+  gap: 68px;
+  padding-top: 46px;
+  padding-bottom: 46px;
 }
 .body-copy {
   max-width: 460px;
@@ -370,14 +372,14 @@ p {
   line-height: 1.9;
 }
 .philosophy .body-copy {
-  padding-top: 32px;
+  padding-top: 22px;
 }
 .section-heading {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 60px;
-  margin-bottom: 48px;
+  gap: 48px;
+  margin-bottom: 38px;
 }
 .section-heading h2 {
   margin-bottom: 0;
@@ -400,7 +402,7 @@ p {
   display: flex;
   flex-direction: column;
   border-right: 1px solid #cbd5c7;
-  min-height: 400px;
+  min-height: 360px;
   transition: background .2s, transform .2s, box-shadow .2s;
   overflow: hidden;
 }
@@ -489,12 +491,12 @@ p {
   gap: 12px;
 }
 .credentials {
-  margin-top: 45px;
+  margin-top: 34px;
   border-top: 1px solid var(--line);
   padding-top: 25px;
   display: grid;
   grid-template-columns: 1fr 1.8fr;
-  gap: 70px;
+  gap: 52px;
 }
 .credentials h3 {
   font-size: 30px;
@@ -582,7 +584,7 @@ p {
   border-top: 1px solid var(--line);
   display: grid;
   grid-template-columns: .9fr 1.2fr;
-  gap: 70px;
+  gap: 52px;
 }
 .faq-list details {
   border-bottom: 1px solid var(--line);
@@ -795,7 +797,7 @@ details[open] .plus:after {
 .two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 85px;
+  gap: 68px;
 }
 .soft-section {
   background: var(--soft);
@@ -803,8 +805,8 @@ details[open] .plus:after {
 .service-details article {
   display: grid;
   grid-template-columns: .65fr 1.5fr;
-  gap: 70px;
-  padding: 55px 0;
+  gap: 58px;
+  padding: 50px 0;
   border-bottom: 1px solid var(--line);
   scroll-margin-top: 120px;
 }
@@ -820,7 +822,7 @@ details[open] .plus:after {
 .image-story {
   display: grid;
   grid-template-columns: 1.25fr .85fr;
-  gap: 64px;
+  gap: 48px;
   align-items: end;
   border-bottom: 1px solid var(--line);
 }
@@ -842,7 +844,7 @@ details[open] .plus:after {
   border: 1px solid var(--line);
 }
 .trust-strip {
-  margin-block: -28px 30px;
+  margin-block: -22px 20px;
 }
 .trust-strip.in-section {
   margin: 0;
@@ -909,8 +911,8 @@ details[open] .plus:after {
 .pillar-card {
   display: grid;
   grid-template-columns: .62fr 1.5fr;
-  gap: 70px;
-  padding: 58px 0;
+  gap: 58px;
+  padding: 52px 0;
   border-bottom: 1px solid var(--line);
   scroll-margin-top: 120px;
 }
@@ -1015,7 +1017,7 @@ details[open] .plus:after {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0 28px;
-  margin: 30px 0;
+  margin: 24px 0;
 }
 .online-steps {
   grid-template-columns: repeat(4, 1fr);
@@ -1037,7 +1039,7 @@ details[open] .plus:after {
 .about-profile {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
-  gap: 85px;
+  gap: 64px;
   align-items: start;
 }
 .brand-panel {
@@ -1112,24 +1114,26 @@ details[open] .plus:after {
 }
 .booking-section {
   display: grid;
-  grid-template-columns: .8fr 1.4fr;
-  gap: 90px;
+  grid-template-columns: minmax(280px, .7fr) minmax(0, 1.3fr);
+  gap: 72px;
+  align-items: start;
 }
 .contact-details h3 {
-  font-size: 39px;
-  margin-bottom: 30px;
+  font-size: 36px;
+  margin-bottom: 22px;
 }
 .contact-methods {
   display: grid;
-  gap: 12px;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
 }
 .contact-methods a,
 .contact-note {
   display: grid;
-  grid-template-columns: 42px 1fr;
-  gap: 14px;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 14px 16px;
   align-items: center;
-  padding: 14px 0;
+  padding: 15px 0;
   border-top: 1px solid var(--line);
   transition: color .2s ease, padding-left .2s ease;
 }
@@ -1138,15 +1142,18 @@ details[open] .plus:after {
 }
 .contact-methods a:hover {
   color: #517246;
-  padding-left: 8px;
+  padding-left: 6px;
 }
 .contact-methods strong {
   display: block;
+  grid-column: 2;
   font-size: 13px;
-  margin-bottom: 4px;
+  margin-bottom: 0;
+  line-height: 1.35;
 }
 .contact-methods small {
   display: block;
+  grid-column: 2;
   color: var(--muted);
   font-size: 11px;
   line-height: 1.6;
@@ -1155,6 +1162,7 @@ details[open] .plus:after {
 .contact-methods .icon-mark,
 .contact-note .icon-mark {
   margin-bottom: 0;
+  grid-row: 1 / span 2;
 }
 .contact-note {
   margin-top: 28px;
@@ -1176,10 +1184,10 @@ details[open] .plus:after {
 }
 .booking-form {
   border-top: 1px solid var(--line);
-  padding-top: 25px;
+  padding-top: 28px;
 }
 .form-heading h2 {
-  font-size: 36px;
+  font-size: 34px;
   margin-bottom: 12px;
 }
 .form-heading p {
@@ -1499,7 +1507,7 @@ input[type="checkbox"] {
     margin-inline: 0;
   }
   .philosophy {
-    gap: 40px;
+    gap: 32px;
   }
   .about-grid {
     grid-template-columns: .7fr 1.4fr;
@@ -1528,7 +1536,14 @@ input[type="checkbox"] {
     gap: 40px;
   }
   .booking-section {
+    grid-template-columns: .78fr 1.22fr;
     gap: 45px;
+  }
+  .header-inner nav {
+    gap: 26px;
+  }
+  .nav-book {
+    gap: 10px;
   }
   .contact-banner {
     padding: 50px 40px;
@@ -1561,7 +1576,7 @@ input[type="checkbox"] {
     width: calc(100% - 40px);
   }
   .section {
-    padding-block: 65px;
+    padding-block: 56px;
   }
   .brand {
     width: 119px;
@@ -1667,11 +1682,11 @@ input[type="checkbox"] {
   }
   .section-heading {
     display: block;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
   }
   .section-heading > p {
     font-size: 13px;
-    margin-top: 22px;
+    margin-top: 16px;
     max-width: 400px;
   }
   .service-grid {
@@ -1944,7 +1959,7 @@ input[type="checkbox"] {
   .contact-details {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    column-gap: 15px;
+    column-gap: 22px;
   }
   .contact-details > .eyebrow,
   .contact-details > h3,
@@ -1962,9 +1977,8 @@ input[type="checkbox"] {
   .contact-details .hours {
     margin-top: 22px;
   }
-  .contact-details > p.small {
-    align-self: center;
-    margin: 22px 0 0;
+  .contact-methods {
+    max-width: 520px;
   }
   .form-grid {
     gap: 20px 15px;
