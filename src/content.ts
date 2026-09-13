@@ -154,7 +154,7 @@ const brand = `<img src="/assets/eduro-logo.png" width="1880" height="1074" alt=
 
 const nav = `<header class="site-header"><div class="wrap header-inner"><a class="brand" href="/" aria-label="Eudora Movement House home">${brand}</a><button class="menu-toggle" aria-expanded="false" aria-controls="main-nav">Menu <span aria-hidden="true">☰</span></button><nav id="main-nav" aria-label="Main navigation"><div class="nav-group"><a href="/services/">Our care</a><div class="nav-submenu"><a href="/services/#pain">Pain management</a><a href="/services/#conditions">Conditions we treat</a><a href="/services/#rehabilitation">Injury, sports & post-surgical rehabilitation</a><a href="/services/#movement">Movement & strength</a></div></div><a href="/about/">About</a><a href="/online-physiotherapy/">Online care</a><a href="/contact/" class="nav-book">Book a consultation ${arrow}</a></nav></div></header>`;
 
-const footer = `<footer class="site-footer wrap"><div class="footer-top"><a class="brand" href="/" aria-label="Eudora Movement House home">${brand}</a><p class="footer-tagline">This is The Light After Recovery.</p><p class="footer-therapist"><strong>Varshini Balamurugan (PT)</strong> · <strong>Musculoskeletal Physiotherapist</strong></p><div><a href="tel:+917418158876">+91 74181 58876</a><a href="mailto:${email}">${email}</a></div></div><div class="footer-links"><a href="/why-eudora/">Why Eudora</a><a href="/areas/">Areas we serve</a><a href="/faq/">FAQs</a><a href="/feedback/">Share feedback</a></div><div class="footer-bottom"><p>© ${new Date().getFullYear()} Eudora Movement House</p><div><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/practitioner/">Practitioner</a></div><p>Bengaluru, India</p></div></footer><a class="whatsapp" href="${wa}" target="_blank" rel="noopener noreferrer" aria-label="Chat with Eudora on WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.6 7.5L3 20.5l1.4-4.7A8.5 8.5 0 1 1 20.5 11.6Z"/><path d="M8 7.5c-.9.7-.7 2.2.6 4s3.3 3.1 4.8 3.3c1.1.1 1.8-.5 2-1.3l-2-1.2-1 1c-1.5-.6-2.7-1.8-3.2-3l.8-.8-1-2Z"/></svg><span>Let's talk</span></a><div class="mobile-book">${button(
+const footer = `<footer class="site-footer wrap"><div class="footer-top"><a class="brand" href="/" aria-label="Eudora Movement House home">${brand}</a><p class="footer-tagline">This is The Light After Recovery.</p><p class="footer-therapist"><strong>Varshini Balamurugan (PT)</strong><span>Musculoskeletal Physiotherapist</span></p><div><a href="tel:+917418158876">+91 74181 58876</a><a href="mailto:${email}">${email}</a></div></div><div class="footer-links"><a href="/why-eudora/">Why Eudora</a><a href="/areas/">Areas we serve</a><a href="/faq/">FAQs</a><a href="/feedback/">Share feedback</a></div><div class="footer-bottom"><p>© ${new Date().getFullYear()} Eudora Movement House</p><div><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/practitioner/">Practitioner</a></div><p>Bengaluru, India</p></div></footer><a class="whatsapp" href="${wa}" target="_blank" rel="noopener noreferrer" aria-label="Chat with Eudora on WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.6 7.5L3 20.5l1.4-4.7A8.5 8.5 0 1 1 20.5 11.6Z"/><path d="M8 7.5c-.9.7-.7 2.2.6 4s3.3 3.1 4.8 3.3c1.1.1 1.8-.5 2-1.3l-2-1.2-1 1c-1.5-.6-2.7-1.8-3.2-3l.8-.8-1-2Z"/></svg><span>Let's talk</span></a><div class="mobile-book">${button(
   'Book a consultation',
 )}</div>`;
 
@@ -214,33 +214,16 @@ add(
   `
 <section class="hero"><div class="wrap hero-inner"><div class="hero-title">${eyebrow(
     'Physiotherapy for considered recovery',
-  )}<h1>Move with<br><em>more ease.</em></h1></div><div class="hero-aside"><p class="hero-description">Personalised physiotherapy for pain relief, stronger movement and confident recovery—at home or online.</p><div class="actions">${button(
+  )}<h1>Move with<br><em>more ease.</em></h1></div><div class="hero-aside"><p class="hero-description">Personalised physiotherapy for pain relief, stronger movement and confident recovery—<strong>at home or online.</strong></p><div class="actions">${button(
     'Begin your recovery',
   )}<a class="text-link" href="/services/">Explore our care <span aria-hidden="true">↓</span></a></div><p class="hero-location"><span>${icon(
     'home',
   )}Bengaluru</span><span>${icon('heart')}Home visits</span><span>${icon(
     'video',
-  )}Online consultations</span></p></div><div class="hero-bottom"><span>Care that begins with you.</span><a href="/about/"><strong>Varshini Balamurugan (PT)</strong> · Musculoskeletal Physiotherapist ${arrow}</a></div></div></section>
+  )}Online consultations</span></p></div><div class="hero-bottom"><span>Care that begins with you.</span><a class="therapist-highlight" href="/about/"><strong>Varshini Balamurugan (PT)</strong><span>Musculoskeletal Physiotherapist</span>${arrow}</a></div></div></section>
 <section class="wrap philosophy section"><div>${eyebrow(
     'A little more than treatment',
-  )}<h2>Recovery is not<br><em>one-size-fits-all.</em></h2></div><div class="body-copy"><p>At Eudora, physiotherapy is a conversation between where you are now and how you want to move next.</p><p>We believe recovery begins with feeling heard and grows through understanding, purposeful movement and consistent support.</p><p>By combining clinical expertise, evidence-informed care and personalised guidance, we help individuals rebuild strength, restore confidence and take an active role in their recovery.</p><p>For us, success is more than short-term relief. It is helping people move forward with greater freedom, independence and trust in their bodies.</p><p><strong>This is The Light After Recovery.</strong></p><a class="text-link" href="/why-eudora/">Find your way forward ${arrow}</a></div></section>
-<section class="wrap trust-strip">${iconCard(
-    'heart',
-    'Listened to first',
-    'Care starts with your story, symptoms and goals.',
-  )}${iconCard(
-    'shield',
-    'Clear and careful',
-    'Your plan is explained in plain, practical language.',
-  )}${iconCard(
-    'home',
-    'Home or online',
-    'Support can happen in your space or over video.',
-  )}${iconCard(
-    'message',
-    'Easy to reach',
-    'WhatsApp, phone and email stay visible when you need us.',
-  )}</section>
+  )}<h2>Recovery is not<br><em>one-size-fits-all.</em></h2><div class="recovery-path-mark" aria-hidden="true"><svg viewBox="0 0 120 92"><path d="M12 74c23 0 22-55 48-55 24 0 21 55 48 55"/><path d="M60 19v52"/><path d="M47 33 60 19l13 14"/><circle cx="12" cy="74" r="4"/><circle cx="108" cy="74" r="4"/></svg></div></div><div class="body-copy"><p>At Eudora, physiotherapy is a conversation between where you are now and how you want to move next.</p><p>We believe recovery begins with feeling heard and grows through understanding, purposeful movement and consistent support.</p><p>By combining clinical expertise, evidence-informed care and personalised guidance, we help individuals rebuild strength, restore confidence and take an active role in their recovery.</p><p>For us, success is more than short-term relief. It is helping people move forward with greater freedom, independence and trust in their bodies.</p><p><strong>This is The Light After Recovery.</strong></p><a class="text-link" href="/why-eudora/">Find your way forward ${arrow}</a></div></section>
 <section class="care-section section"><div class="wrap"><div class="section-heading"><div>${eyebrow(
     'How we can help',
   )}<h2>Care with<br><em>intention.</em></h2></div></div><div class="service-grid">${homeCare
@@ -249,7 +232,7 @@ add(
         const imageMap: Record<string, string> = {
           'musculoskeletal': 'photos/care-03.jpg',
           'rehabilitation': 'photos/care-02.jpg',
-          'movement': 'photos/care-20.jpg',
+          'movement': 'photos/care-12.jpg',
           'online': 'photos/care-12.jpg',
         };
         const imageSrc = imageMap[id];
@@ -310,7 +293,7 @@ add(
   )}<details><summary>More about rehabilitation<span class="plus" aria-hidden="true"></span></summary><div class="pillar-more"><p>At Eudora, rehabilitation progresses according to your condition, stage of healing and individual goals, from early movement and symptom management through progressive strengthening and functional training.</p><p>For athletes and active individuals, rehabilitation can progress towards sport-specific strength, movement, balance, agility and graded return to training or sport.</p><p>Following surgery, rehabilitation is coordinated with your surgeon's precautions and recovery protocol where applicable.</p></div></details>${button(
     'Discuss your recovery',
   )}</div></article><article id="movement" class="pillar-card"><span class="service-number">04 / Movement and strength</span><div><h2>Move better.<br><em>Build capacity. Stay capable.</em></h2><p>Movement and strength are fundamental to maintaining independence, managing physical demands and returning to the activities you value.</p>${pillarVisual(
-    'care-20.jpg',
+    'care-12.jpg',
     'Guided lower-limb mobility and stretching work',
   )}<details><summary>More about movement and strength<span class="plus" aria-hidden="true"></span></summary><div class="pillar-more"><p>Pain, injury, surgery or periods of reduced activity can lead to changes in mobility, muscle strength, balance, coordination, endurance and confidence in movement.</p><ul class="condition-list"><li>Mobility and flexibility</li><li>Strength</li><li>Balance and stability</li><li>Movement control</li><li>Endurance</li><li>Functional capacity</li><li>Exercise confidence</li><li>Return to everyday activity and sport</li></ul><p>Rather than exercising simply for the sake of exercising, we focus on building the physical capacity your life requires.</p></div></details>${button(
     'Find your starting point',
