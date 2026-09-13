@@ -43,7 +43,7 @@ const faq: Array<[string, string]> = [
   ],
   [
     'What should I have ready for my first session?',
-    'Wear comfortable clothing that allows you to move, and keep any relevant reports or previous treatment notes available. For online sessions, choose a quiet space with a stable internet connection and room to move safely.',
+    'Keep any relevant reports or previous treatment notes available. For online sessions, choose a quiet space with a stable internet connection and room to move safely.',
   ],
   [
     'When are appointments available?',
@@ -59,25 +59,25 @@ const services: Array<[string, string, string, string]> = [
   [
     '01',
     'Musculoskeletal care',
-    'Support for back, neck, joint and postural concerns that affect everyday movement.',
+    'Evidence-informed assessment and treatment for muscle, joint, and spine conditions—helping reduce pain, restore mobility, and improve everyday function.',
     'musculoskeletal',
   ],
   [
     '02',
     'Injury & sports rehabilitation',
-    'An individual approach to rebuilding movement after an injury or surgery.',
+    'Structured, progressive rehabilitation following injury or surgery, designed to rebuild strength and support a confident return to activity or sport.',
     'rehabilitation',
   ],
   [
     '03',
     'Movement & strength',
-    'Exercise guidance shaped around your mobility, daily activities and personal goals.',
+    'Personalised exercise programmes to improve mobility, stability, strength, balance, and movement control for daily life, work, fitness, or sport.',
     'movement',
   ],
   [
     '04',
     'Online physiotherapy',
-    'Professional guidance, movement assessment and follow-up wherever you are.',
+    'One-to-one video sessions offering movement assessment, guided exercise, personalized recovery plans, and regular progress reviews—wherever you are.',
     'online',
   ],
 ];
@@ -100,7 +100,7 @@ const brand = `<img src="/assets/eduro-logo.png" width="1880" height="1074" alt=
 
 const nav = `<header class="site-header"><div class="wrap header-inner"><a class="brand" href="/" aria-label="Eudora Movement House home">${brand}</a><button class="menu-toggle" aria-expanded="false" aria-controls="main-nav">Menu <span aria-hidden="true">☰</span></button><nav id="main-nav" aria-label="Main navigation"><a href="/services/">Our care</a><a href="/about/">About</a><a href="/online-physiotherapy/">Online care</a><a href="/contact/" class="nav-book">Book a consultation ${arrow}</a></nav></div></header>`;
 
-const footer = `<footer class="site-footer wrap"><div class="footer-top"><a class="brand" href="/" aria-label="Eudora Movement House home">${brand}</a><p class="footer-tagline">The light after recovery.</p><div><a href="tel:+917418158876">+91 74181 58876</a><a href="mailto:${email}">${email}</a></div></div><div class="footer-links"><a href="/why-eudora/">Why Eudora</a><a href="/areas/">Areas we serve</a><a href="/faq/">FAQs</a><a href="/testimonials/">Patient voices</a><a href="/feedback/">Share feedback</a></div><div class="footer-bottom"><p>© ${new Date().getFullYear()} Eudora Movement House</p><div><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/practitioner/">Practitioner</a></div><p>Bengaluru, India</p></div></footer><a class="whatsapp" href="${wa}" target="_blank" rel="noopener noreferrer" aria-label="Chat with Eudora on WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.6 7.5L3 20.5l1.4-4.7A8.5 8.5 0 1 1 20.5 11.6Z"/><path d="M8 7.5c-.9.7-.7 2.2.6 4s3.3 3.1 4.8 3.3c1.1.1 1.8-.5 2-1.3l-2-1.2-1 1c-1.5-.6-2.7-1.8-3.2-3l.8-.8-1-2Z"/></svg><span>Let's talk</span></a><div class="mobile-book">${button(
+const footer = `<footer class="site-footer wrap"><div class="footer-top"><a class="brand" href="/" aria-label="Eudora Movement House home">${brand}</a><p class="footer-tagline">This is The Light After Recovery.</p><p class="footer-therapist">Varshini Balamurugan (PT) · Musculoskeletal Physiotherapist</p><div><a href="tel:+917418158876">+91 74181 58876</a><a href="mailto:${email}">${email}</a></div></div><div class="footer-links"><a href="/why-eudora/">Why Eudora</a><a href="/areas/">Areas we serve</a><a href="/faq/">FAQs</a><a href="/testimonials/">Patient voices</a><a href="/feedback/">Share feedback</a></div><div class="footer-bottom"><p>© ${new Date().getFullYear()} Eudora Movement House</p><div><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/practitioner/">Practitioner</a></div><p>Bengaluru, India</p></div></footer><a class="whatsapp" href="${wa}" target="_blank" rel="noopener noreferrer" aria-label="Chat with Eudora on WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.6 7.5L3 20.5l1.4-4.7A8.5 8.5 0 1 1 20.5 11.6Z"/><path d="M8 7.5c-.9.7-.7 2.2.6 4s3.3 3.1 4.8 3.3c1.1.1 1.8-.5 2-1.3l-2-1.2-1 1c-1.5-.6-2.7-1.8-3.2-3l.8-.8-1-2Z"/></svg><span>Let's talk</span></a><div class="mobile-book">${button(
   'Book a consultation',
 )}</div>`;
 
@@ -167,10 +167,18 @@ add(
     'How we can help',
   )}<h2>Care with<br><em>intention.</em></h2></div><p>Support for the moments when movement feels difficult, unfamiliar or ready for a new beginning.</p></div><div class="service-grid">${services
     .map(
-      ([n, title, desc, id]) =>
-        `<a class="service" href="${
+      ([n, title, desc, id]) => {
+        const imageMap: Record<string, string> = {
+          'musculoskeletal': 'musculoskeletal.svg',
+          'rehabilitation': 'rehabilitation.svg',
+          'movement': 'movement-strength.svg',
+          'online': 'online-physiotherapy.svg',
+        };
+        const imageSrc = imageMap[id];
+        return `<a class="service" href="${
           id === 'online' ? '/online-physiotherapy/' : '/services/#' + id
-        }"><span class="service-number">${n}</span><h3>${title}</h3><p>${desc}</p><span class="service-arrow" aria-hidden="true">↗</span></a>`,
+        }"><img src="/assets/${imageSrc}" alt="${title}" class="service-image"><span class="service-number">${n}</span><h3>${title}</h3><p>${desc}</p><span class="service-arrow" aria-hidden="true">↗</span></a>`;
+      }
     )
     .join(
       '',
@@ -181,9 +189,7 @@ add(
     'The house behind the name',
   )}<h2>Made for the<br><em>human body.</em></h2><div class="body-copy"><p>Eudora Movement House was founded by Varshini Balamurugan, a physiotherapist offering care that feels personal, unhurried and practical.</p><p>Every plan starts with understanding you—your work, your home, your movement and your goals.</p></div><a class="text-link" href="/about/">Meet Varshini ${arrow}</a></div><aside class="location-note">${eyebrow(
     'Rooted in',
-  )}<h3>Bengaluru</h3><p>Home visits by appointment.<br>Online care, wherever you are.</p><a class="text-link" href="/areas/">Our neighbourhoods ${arrow}</a></aside></div><div class="credentials"><div>${eyebrow(
-    'Professional profile',
-  )}<h3>Qualified care.<br><em>A personal approach.</em></h3></div><dl><div><dt>Academic qualifications</dt><dd>MPT · Musculoskeletal Science<br>Bachelor of Physiotherapy</dd></div><div><dt>Professional membership</dt><dd>Indian Association of Physiotherapists (IAP)</dd></div><div><dt>Care that fits your life</dt><dd>Home visits in Bengaluru · Online consultations</dd></div></dl></div></div></section>
+  )}<h3>Bengaluru</h3><p>Home visits by appointment.<br>Online care, wherever you are.</p><a class="text-link" href="/areas/">Our neighbourhoods ${arrow}</a></aside></div></div></section>
 <section class="wrap section"><div class="section-heading"><div>${eyebrow(
     'From first hello to your next step',
   )}<h2>A little clarity.<br><em>A way forward.</em></h2></div><p>You don't need to have all the answers before you reach out. We'll start with a conversation.</p></div><ol class="steps"><li><span>01</span><h3>Tell us about you</h3><p>Share what brings you here and whether you prefer a home visit or online care.</p></li><li><span>02</span><h3>Find a time together</h3><p>We'll discuss availability and confirm your consultation personally.</p></li><li><span>03</span><h3>Make a considered start</h3><p>Your assessment helps shape practical guidance and a plan around your goals.</p></li></ol></section>
@@ -234,7 +240,7 @@ add(
     'The meaning behind our care',
     'A place to begin<br><em>moving forward.</em>',
     'The light after recovery. A reminder of the everyday moments that make movement meaningful.',
-  )}<section class="wrap section two-col"><h2>Understood.<br><em>Not rushed.</em></h2><div class="body-copy"><p>We believe care should make room for the whole person: your questions, your routines and the things you want to return to.</p><p>Movement House reflects that idea—a practice centred on how you move through your life, with guidance you can understand and use.</p></div></section><section class="soft-section section"><div class="wrap"><div class="section-heading"><h2>What that looks like<br><em>in practice.</em></h2></div><ol class="steps"><li><span>01</span><h3>Space to be heard</h3><p>We start by understanding what brings you here and what matters to you.</p></li><li><span>02</span><h3>Clarity in your care</h3><p>Your assessment and proposed plan are explained in accessible, everyday language.</p></li><li><span>03</span><h3>Guidance for real life</h3><p>Practical movement support that considers your routine, environment and goals.</p></li></ol></div></section>`,
+  )}<section class="wrap section two-col"><h2>Understood.<br><em>Not rushed.</em></h2><div class="body-copy"><p>We believe care should make room for the whole person: your questions, your routines and the things you want to return to.</p><p>Movement House reflects that idea—a practice centred on how you move through your life, with guidance you can understand and use.</p></div></section><section class="soft-section section"><div class="wrap"><div class="section-heading"><h2>What that looks like<br><em>in practice.</em></h2></div><ol class="steps"><li><span>01</span><h3>Space to be heard</h3><p>We start by understanding what brings you here and what matters to you.</p></li><li><span>02</span><h3>Clarity in your care</h3><p>Your assessment and proposed plan are explained in accessible, everyday language.</p></li><li><span>03</span><h3>Comprehensive care</h3><p>Wide range of treatments addressing pain, posture, injuries, sports and post-surgical rehabilitation.</p></li><li><span>04</span><h3>Personalised care</h3><p>Every treatment plan is tailored to your unique needs and healthy goals.</p></li></ol></div></section>`,
 );
 
 add(
@@ -244,8 +250,8 @@ add(
   `${intro(
     'Care, wherever you are',
     'A little distance.<br><em>The same attention.</em>',
-    'Online physiotherapy brings a conversation, guided movement assessment and practical exercise support to your own space.',
-  )}<section class="wrap two-col section"><h2>Make room<br><em>for your care.</em></h2><div class="body-copy"><p>After your appointment is confirmed, we'll share instructions for joining your video consultation. Choose a quiet space with a stable connection, comfortable clothing and enough room to move.</p><p>You'll discuss your concerns, be guided through appropriate movements and receive advice tailored to your assessment.</p><div class="notice"><h3>What online care can't do</h3><p>A full physical examination and certain hands-on tests cannot be performed remotely. If your needs require an in-person assessment, we'll discuss that next step.</p></div>${button(
+    'Our online services go beyond a one-time consultation. Through live video sessions we aim in managing pain, improving mobility and strength and support better quality of life—all from the comfort of your home.',
+  )}<section class="wrap two-col section"><h2>Make room<br><em>for your care.</em></h2><div class="body-copy"><p>After your appointment is confirmed, we'll share instructions for joining your video consultation. Choose a quiet space with a stable connection and enough room to move.</p><p>You'll discuss your concerns, be guided through appropriate movements and receive advice tailored to your assessment.</p><div class="notice"><h3>What online care can't do</h3><p>A full physical examination and certain hands-on tests cannot be performed remotely. If your needs require an in-person assessment, we'll discuss that next step.</p></div>${button(
     'Request online care',
     '/contact/?type=online',
   )}</div></section>`,
@@ -259,8 +265,8 @@ add(
     'Close to home',
     'Your neighbourhood.<br><em>Your familiar space.</em>',
     'Home physiotherapy across selected Bengaluru neighbourhoods, with appointments arranged personally.',
-  )}<section class="wrap two-col section"><div><h2>Home visits<br><em>in Bengaluru.</em></h2><p>Tell us your locality when you get in touch. We'll confirm availability before scheduling your visit.</p><a href="https://www.google.com/maps/search/Bengaluru/" class="text-link" target="_blank" rel="noopener noreferrer">View Bengaluru on Google Maps ${arrow}</a><iframe class="area-map" title="Map of Bengaluru, the home-visit service city" src="https://maps.google.com/maps?q=Bengaluru&amp;z=11&amp;output=embed" loading="lazy" referrerpolicy="no-referrer"></iframe></div><ul class="area-list">${locations
-    .map((x) => `<li>${x}<span aria-hidden="true">↗</span></li>`)
+  )}<section class="wrap two-col section"><div><h2>Home visits<br><em>in Bengaluru.</em></h2><p>Tell us your locality when you get in touch. We'll confirm availability before scheduling your visit.</p><a href="https://www.google.com/maps/search/Bengaluru/" class="text-link" target="_blank" rel="noopener noreferrer">View Bengaluru on Google Maps ${arrow}</a><iframe class="area-map" title="Map of Bengaluru, the home-visit service city" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d248067.50598690342!2d77.50961057910156!3d13.193488!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae173662d799cd%3A0x3e6537cdfb28db49!2sBengaluru!5e0!3m2!1sen!2sin!4v1234567890" loading="lazy" sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe></div><ul class="area-list">${locations
+    .map((x) => `<li><a href="https://www.google.com/maps/search/${encodeURIComponent(x)}+Bengaluru/" target="_blank" rel="noopener noreferrer">${x}<span aria-hidden="true">↗</span></a></li>`)
     .join(
       '',
     )}</ul></section><section class="soft-section section"><div class="wrap two-col"><h2>A different<br><em>postcode?</em></h2><div class="body-copy"><p>Ask us about your location, or explore online physiotherapy. Online care may be an option depending on your assessment and needs.</p><a href="/online-physiotherapy/" class="text-link">Explore online consultations ${arrow}</a></div></div></section>`,
