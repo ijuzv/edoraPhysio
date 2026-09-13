@@ -58,27 +58,27 @@ const faq: Array<[string, string]> = [
 const services: Array<[string, string, string, string]> = [
   [
     '01',
-    'Musculoskeletal care',
-    'Evidence-informed assessment and treatment for muscle, joint, and spine conditions—helping reduce pain, restore mobility, and improve everyday function.',
-    'musculoskeletal',
+    'Pain management',
+    'Understand the pain, address what contributes to it, and move forward with more confidence.',
+    'pain',
   ],
   [
     '02',
-    'Injury & sports rehabilitation',
-    'Structured, progressive rehabilitation following injury or surgery, designed to rebuild strength and support a confident return to activity or sport.',
-    'rehabilitation',
+    'Conditions we treat',
+    'Support for concerns affecting the neck, back, shoulder, limbs, joints and everyday movement.',
+    'conditions',
   ],
   [
     '03',
-    'Movement & strength',
-    'Personalised exercise programmes to improve mobility, stability, strength, balance, and movement control for daily life, work, fitness, or sport.',
-    'movement',
+    'Injury, sports & post-surgical rehab',
+    'Structured rehabilitation to recover, rebuild and return to daily activity, work or sport.',
+    'rehabilitation',
   ],
   [
     '04',
-    'Online physiotherapy',
-    'One-to-one video sessions offering movement assessment, guided exercise, personalized recovery plans, and regular progress reviews—wherever you are.',
-    'online',
+    'Movement & strength',
+    'Personalised programmes to build mobility, strength, balance and functional capacity.',
+    'movement',
   ],
 ];
 
@@ -169,14 +169,14 @@ add(
     .map(
       ([n, title, desc, id]) => {
         const imageMap: Record<string, string> = {
-          'musculoskeletal': 'musculoskeletal.svg',
+          'pain': 'musculoskeletal.svg',
+          'conditions': 'musculoskeletal.svg',
           'rehabilitation': 'rehabilitation.svg',
           'movement': 'movement-strength.svg',
-          'online': 'online-physiotherapy.svg',
         };
         const imageSrc = imageMap[id];
         return `<a class="service" href="${
-          id === 'online' ? '/online-physiotherapy/' : '/services/#' + id
+          '/services/#' + id
         }"><img src="/assets/${imageSrc}" alt="${title}" class="service-image"><span class="service-number">${n}</span><h3>${title}</h3><p>${desc}</p><span class="service-arrow" aria-hidden="true">↗</span></a>`;
       }
     )
@@ -206,15 +206,17 @@ add(
   'Explore physiotherapy for back, neck and joint concerns, injury rehabilitation, movement and strength in Bengaluru.',
   `${intro(
     'Our care',
-    'Room for better<br><em>movement.</em>',
-    'Care starts with what matters to you. We consider your concerns, your daily routine and what you want to get back to doing.',
-  )}<section class="wrap service-details"><article id="musculoskeletal"><span class="service-number">01 / Everyday movement</span><div><h2>Musculoskeletal <em>care.</em></h2><p>Assessment and individual guidance for concerns affecting muscles, joints and everyday movement.</p><ul class="condition-list"><li>Back and neck concerns</li><li>Postural and work-related discomfort</li><li>Shoulder, elbow and wrist concerns</li><li>Hip, knee, ankle and foot concerns</li></ul>${button(
-    'Ask about your concern',
-  )}</div></article><article id="rehabilitation"><span class="service-number">02 / Returning to what you love</span><div><h2>Injury & sports<br><em>rehabilitation.</em></h2><p>A considered approach to movement after an injury or surgery, shaped around your assessment and any relevant clinical advice.</p><ul class="condition-list"><li>Sports and activity-related injuries</li><li>Recovery after surgery</li><li>Rebuilding movement after injury</li><li>Guidance for a return to daily activity</li></ul>${button(
+    'Care that meets<br><em>you where you are.</em>',
+    'Every plan begins with understanding what you are experiencing, what movement asks of your body, and what you want to return to with confidence.',
+  )}<section class="wrap care-pillars section"><article id="pain" class="pillar-card"><span class="service-number">01 / Pain management</span><div><h2>Understand the pain.<br><em>Move forward.</em></h2><p>Pain is more than a symptom. It is a protective experience influenced by what is happening in the body as well as how the nervous system interprets it.</p><details><summary>Why addressing pain at the right time matters<span class="plus" aria-hidden="true"></span></summary><div class="pillar-more"><p>Injury, inflammation, tissue sensitivity, joint or muscle loading, sleep, stress, previous experiences and the way we move can all influence how pain is experienced.</p><p>This is why two people with similar conditions may experience pain very differently, and why effective pain management should look beyond the painful area alone.</p><p>Acute pain often serves a protective role after injury or irritation. When pain continues, movement may reduce, muscles can lose capacity, confidence can fall and everyday activities may gradually become harder.</p><p>At Eudora, the goal is not simply to temporarily reduce pain, but to understand what may be contributing to it and help you return to comfortable, confident movement.</p></div></details><details><summary>What can contribute to pain?<span class="plus" aria-hidden="true"></span></summary><div class="pillar-more"><ul class="condition-list compact-list"><li>Biological and biochemical factors</li><li>Biomechanical factors</li><li>Psychosocial factors</li></ul><p>These factors interact rather than existing separately, forming the basis of a modern biopsychosocial approach to pain management.</p></div></details><details><summary>How physiotherapy can help<span class="plus" aria-hidden="true"></span></summary><div class="pillar-more"><div class="therapy-list"><p><strong>Manual Therapy</strong> - hands-on techniques including joint and soft-tissue mobilisation to help improve movement and provide short-term symptom relief.</p><p><strong>Myofascial & Trigger-Point Release</strong> - targeted soft-tissue techniques used where muscle and myofascial sensitivity or restriction may be contributing to pain and movement limitations.</p><p><strong>Osteopathic Manipulative Techniques</strong> - selected mobilisation and manipulation techniques used to address musculoskeletal restrictions and improve movement where clinically appropriate.</p><p><strong>Dry Needling</strong> - when indicated, dry needling may be incorporated to address myofascial pain and trigger-point-related symptoms as part of a broader rehabilitation programme.</p><p><strong>Mobility & Stretching</strong> - individually selected movements can help restore comfortable range of motion, flexibility and movement confidence.</p><p><strong>Strengthening & Progressive Loading</strong> - gradually rebuilding muscle strength and tissue capacity helps prepare your body for the demands of everyday life, work and sport.</p></div><p>The emphasis is on combining symptom management with active rehabilitation, rather than depending on passive treatment alone.</p></div></details><details><summary>The Eudora approach<span class="plus" aria-hidden="true"></span></summary><div class="pillar-more"><ol class="approach-list"><li>We begin by understanding your pain, movement and goals.</li><li>We use appropriate hands-on treatment and pain-management strategies when they can help.</li><li>We restore movement and gradually build strength and capacity.</li><li>We give you the knowledge and tools to continue progressing beyond your sessions.</li></ol></div></details><details><summary>Pain management online<span class="plus" aria-hidden="true"></span></summary><div class="pillar-more"><p>Your recovery does not have to depend on distance. Through online sessions, we can provide movement assessment, pain education, guided mobility, personalised exercise, progressive strengthening and professionally guided self-release techniques.</p><p>Where appropriate, we can teach safe self-release strategies or guide simple assisted-release techniques with the help of a caregiver or family member.</p></div></details>${button(
+    'Ask about pain',
+  )}</div></article><article id="conditions" class="pillar-card"><span class="service-number">02 / Conditions we treat</span><div><h2>Care for the areas<br><em>that need attention.</em></h2><p>We support a wide range of musculoskeletal concerns affecting the spine, joints, muscles, tendons and everyday movement.</p><div class="condition-groups"><details open><summary>Neck pain<span class="plus" aria-hidden="true"></span></summary><p>Mechanical neck pain, cervical stiffness, muscle and myofascial pain, cervicogenic headache, postural or work-related neck pain, cervical degenerative disc disease, whiplash and thoracic outlet syndrome.</p></details><details><summary>Shoulder pain<span class="plus" aria-hidden="true"></span></summary><p>Rotator cuff tear, tendinopathy, frozen shoulder, impingement, shoulder instability, muscle strains, bicipital tendinitis and post-operative rehabilitation.</p></details><details><summary>Elbow, wrist & hand pain<span class="plus" aria-hidden="true"></span></summary><p>Tennis elbow, golfer's elbow, tendon-related pain, wrist sprain, De Quervain's tenosynovitis, carpal tunnel related symptoms, joint stiffness, sprains, strains and post-fracture rehabilitation.</p></details><details><summary>Back pain<span class="plus" aria-hidden="true"></span></summary><p>Upper and mid-back pain, thoracic stiffness, spondylolisthesis, low-back pain, osteoporosis related concerns, sciatica or radiculopathy, disc herniation, coccydynia and degenerative conditions.</p></details><details><summary>Hip pain<span class="plus" aria-hidden="true"></span></summary><p>Hip osteoarthritis, gluteal tendinopathy, greater trochanteric pain, muscle strains, bursitis, piriformis syndrome and post-operative rehabilitation.</p></details><details><summary>Knee pain<span class="plus" aria-hidden="true"></span></summary><p>Knee osteoarthritis, patellofemoral pain, ACL and other ligament injuries, meniscal injuries, patellar tendinopathy, muscle and tendon injuries, post-operative knee rehabilitation and IT band syndrome.</p></details><details><summary>Foot & ankle pain<span class="plus" aria-hidden="true"></span></summary><p>Ankle sprains, Achilles tendinopathy, plantar fasciitis, foot and ankle stiffness, muscle and tendon injuries, post-fracture rehabilitation and return-to-running rehabilitation.</p></details></div>${button(
+    'Ask about your condition',
+  )}</div></article><article id="rehabilitation" class="pillar-card"><span class="service-number">03 / Injury, sports & post-surgical rehabilitation</span><div><h2>Recover. Rebuild.<br><em>Return.</em></h2><p>Recovery does not end when the pain settles. Rehabilitation helps restore the mobility, strength, control and physical capacity required for everyday life or sport.</p><details><summary>Learn more about rehabilitation<span class="plus" aria-hidden="true"></span></summary><div class="pillar-more"><p>At Eudora, rehabilitation progresses according to your condition, stage of healing and individual goals, from early movement and symptom management through progressive strengthening and functional training.</p><p>For athletes and active individuals, rehabilitation can progress towards sport-specific strength, movement, balance, agility and graded return to training or sport.</p><p>Following surgery, rehabilitation is coordinated with your surgeon's precautions and recovery protocol where applicable.</p></div></details>${button(
     'Discuss your recovery',
-  )}</div></article><article id="movement"><span class="service-number">03 / Confidence in everyday life</span><div><h2>Movement & <em>strength.</em></h2><p>Personalised exercise guidance that considers your starting point, mobility and goals.</p><ul class="condition-list"><li>Mobility and flexibility</li><li>Strength and movement confidence</li><li>Support for everyday independence</li><li>Practical home exercise guidance</li></ul>${button(
+  )}</div></article><article id="movement" class="pillar-card"><span class="service-number">04 / Movement and strength</span><div><h2>Move better.<br><em>Build capacity.</em></h2><p>Movement and strength are fundamental to maintaining independence, managing physical demands and returning to the activities you value.</p><details><summary>Learn more about movement and strength<span class="plus" aria-hidden="true"></span></summary><div class="pillar-more"><p>Pain, injury, surgery or periods of reduced activity can lead to changes in mobility, muscle strength, balance, coordination, endurance and confidence in movement.</p><ul class="condition-list"><li>Mobility and flexibility</li><li>Strength</li><li>Balance and stability</li><li>Movement control</li><li>Endurance</li><li>Functional capacity</li><li>Exercise confidence</li><li>Return to everyday activity and sport</li></ul><p>Rather than exercising simply for the sake of exercising, we focus on building the physical capacity your life requires.</p></div></details>${button(
     'Find your starting point',
-  )}</div></article></section><section class="soft-section section"><div class="wrap two-col"><h2>Your plan.<br><em>Your pace.</em></h2><div class="body-copy"><p>We begin with an assessment and explain the proposed approach in plain language. Your care may include movement education, exercises and appropriate hands-on treatment during home visits.</p><p>Online consultations offer guided assessment and exercise support. They cannot include a full physical examination or certain hands-on tests.</p><a href="/online-physiotherapy/" class="text-link">Explore online care ${arrow}</a></div></div></section>`,
+  )}</div></article></section><section class="soft-section section"><div class="wrap two-col"><h2>Your plan.<br><em>Your pace.</em></h2><div class="body-copy"><p>We begin with an assessment and explain the proposed approach in plain language. Your care may include movement education, exercises and appropriate hands-on treatment during home visits.</p><p>Online consultations offer guided assessment and exercise support when care from a distance is suitable for your needs.</p><a href="/online-physiotherapy/" class="text-link">Explore online care ${arrow}</a></div></div></section>`,
 );
 
 add(
@@ -249,12 +251,14 @@ add(
   'Understand online physiotherapy with Eudora Movement House, from video assessment to personalised exercise guidance.',
   `${intro(
     'Care, wherever you are',
-    'A little distance.<br><em>The same attention.</em>',
-    'Our online services go beyond a one-time consultation. Through live video sessions we aim in managing pain, improving mobility and strength and support better quality of life—all from the comfort of your home.',
-  )}<section class="wrap two-col section"><h2>Make room<br><em>for your care.</em></h2><div class="body-copy"><p>After your appointment is confirmed, we'll share instructions for joining your video consultation. Choose a quiet space with a stable connection and enough room to move.</p><p>You'll discuss your concerns, be guided through appropriate movements and receive advice tailored to your assessment.</p><div class="notice"><h3>What online care can't do</h3><p>A full physical examination and certain hands-on tests cannot be performed remotely. If your needs require an in-person assessment, we'll discuss that next step.</p></div>${button(
+    "Your recovery doesn't have to<br><em>depend on distance.</em>",
+    "Whether you're managing pain, rebuilding after an injury or working towards moving with greater confidence, Eudora brings personalised physiotherapy guidance to wherever you are. The distance may be different. The attention to your recovery isn't.",
+  )}<section class="wrap two-col section"><h2>Who can<br><em>benefit?</em></h2><div class="body-copy"><p>Online physiotherapy can be helpful for people managing musculoskeletal pain or stiffness, sports injuries, reduced mobility or strength, post-operative rehabilitation, persistent pain, arthritis-related movement difficulties, or continued rehabilitation when regular travel is difficult.</p><p>After your appointment is confirmed, we'll share instructions for joining your video consultation. Choose a quiet space with a stable connection and enough room to move safely.</p>${button(
     'Request online care',
     '/contact/?type=online',
-  )}</div></section>`,
+  )}</div></section><section class="soft-section section"><div class="wrap"><div class="section-heading"><div>${eyebrow(
+    'How online care works',
+  )}<h2>Guided care,<br><em>step by step.</em></h2></div><p>Each session is shaped around your symptoms, goals and the kind of support that can be offered safely through live video.</p></div><ol class="steps online-steps"><li><span>01</span><h3>Assessment</h3><p>We begin by understanding your symptoms, medical history, movement concerns and recovery goals, followed by a guided virtual movement assessment where appropriate.</p></li><li><span>02</span><h3>Pain & movement support</h3><p>Your session may include guided mobility, movement strategies and self-release techniques to help manage pain, stiffness and muscle tension.</p></li><li><span>03</span><h3>Personalised rehabilitation</h3><p>You receive an individualised programme that may include mobility, strengthening, flexibility, movement retraining and functional exercises based on your assessment and goals.</p></li><li><span>04</span><h3>Guided sessions</h3><p>Your physiotherapist guides, reviews and progresses your exercises over live sessions, helping you build confidence with each next step.</p></li></ol></div></section><section class="wrap two-col section"><h2>Why online<br><em>physiotherapy?</em></h2><div class="body-copy"><p>Receive personalised care from your own space, with professional assessment, pain-management strategies, guided self-release, individualised exercises and ongoing rehabilitation support.</p><p class="small">If your needs would be better served by an in-person assessment or hands-on care, we will discuss that next step with you.</p><a href="/services/" class="text-link">Explore all care options ${arrow}</a></div></section>`,
 );
 
 add(

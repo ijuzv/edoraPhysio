@@ -747,6 +747,102 @@ details[open] .plus:after {
 .service-details h2 {
   font-size: 54px;
 }
+.care-pillars {
+  display: grid;
+  gap: 0;
+}
+.pillar-card {
+  display: grid;
+  grid-template-columns: .62fr 1.5fr;
+  gap: 70px;
+  padding: 58px 0;
+  border-bottom: 1px solid var(--line);
+  scroll-margin-top: 120px;
+}
+.pillar-card:first-child {
+  border-top: 1px solid var(--line);
+}
+.pillar-card > span {
+  padding-top: 18px;
+}
+.pillar-card h2 {
+  font-size: 54px;
+}
+.pillar-card > div > p {
+  max-width: 690px;
+}
+.pillar-card details,
+.condition-groups details {
+  border-top: 1px solid var(--line);
+}
+.pillar-card details:last-of-type,
+.condition-groups details:last-child {
+  border-bottom: 1px solid var(--line);
+}
+.pillar-card summary,
+.condition-groups summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  list-style: none;
+  cursor: pointer;
+  padding: 18px 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+.pillar-card summary::-webkit-details-marker,
+.condition-groups summary::-webkit-details-marker {
+  display: none;
+}
+.pillar-card .plus,
+.condition-groups .plus {
+  margin-left: auto;
+}
+.pillar-more {
+  padding-bottom: 12px;
+  max-width: 780px;
+}
+.pillar-more p,
+.condition-groups p {
+  font-size: 13px;
+  line-height: 1.9;
+}
+.therapy-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 28px;
+}
+.therapy-list p {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.therapy-list strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.approach-list {
+  margin: 0;
+  padding-left: 20px;
+}
+.approach-list li {
+  padding: 10px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.compact-list {
+  margin-block: 10px 18px;
+}
+.condition-groups {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 28px;
+  margin: 30px 0;
+}
+.online-steps {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 34px;
+}
 .condition-list {
   list-style: none;
   padding: 0;
@@ -1537,6 +1633,26 @@ input[type="checkbox"] {
   }
   .service-details h2 {
     font-size: 44px;
+  }
+  .pillar-card {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 50px 0;
+  }
+  .pillar-card > span {
+    margin-bottom: 24px;
+    padding-top: 0;
+  }
+  .pillar-card h2 {
+    font-size: 44px;
+  }
+  .condition-groups,
+  .online-steps,
+  .therapy-list {
+    grid-template-columns: 1fr;
+  }
+  .condition-groups {
+    gap: 0;
   }
   .condition-list {
     grid-template-columns: 1fr;
