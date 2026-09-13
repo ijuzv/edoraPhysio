@@ -1134,8 +1134,8 @@ details[open] .plus:after {
   border-block: 1px solid #d5ddd2;
 }
 .online-steps {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
 }
 .online-steps li {
   background: rgba(248, 248, 245, .72);
