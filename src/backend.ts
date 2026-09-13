@@ -12,6 +12,10 @@ import {
   sendAppointmentConfirmation,
   sendFeedbackAcknowledgment,
 } from './whatsapp';
+import {
+  receiveWhatsAppWebhook,
+  verifyWhatsAppWebhook,
+} from './whatsappWebhook';
 
 type ValidationError = { error: string };
 type ValidationSuccess<T> = { data: T };
@@ -329,6 +333,19 @@ export function createApi(
       const path = new URL(req.url).pathname.replace(/\/$/, '');
 
       if (path.startsWith('/api/')) {
+        if (
+          path === '/api/whatsapp' ||
+          path === '/api/whatsapp/webhook'
+        ) {
+          if (req.method === 'GET') {
+            return verifyWhatsAppWebhook(req);
+          }
+
+          if (req.method === 'POST') {
+            return receiveWhatsAppWebhook(req);
+          }
+        }
+
         const origin = req.headers.get('origin');
         const localOrigin =
           new URL(req.url).protocol +
