@@ -25,6 +25,13 @@ interface AppointmentInsert {
   idempotency_key: string;
 }
 
+interface AppointmentDetailsUpdate {
+  consultation_type?: 'home' | 'online';
+  preferred_date?: string;
+  preferred_time?: string;
+  status?: AppointmentStatus;
+}
+
 interface AppointmentUpdate {
   whatsapp_sent: boolean;
   whatsapp_sent_at?: string;
@@ -90,6 +97,7 @@ export interface ListOptions {
   status?: string;
   from?: string;
   to?: string;
+  active?: string;
 }
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -125,23 +133,55 @@ function pageRange(options: ListOptions): [number, number] {
   return [from, from + pageSize - 1];
 }
 
+async function getActivePatientByPhone(
+  normalizedPhone: string,
+  excludeId?: string,
+) {
+  const supabase = getSupabase();
+  let query = supabase
+    .from('patients')
+    .select('id, full_name')
+    .eq('normalized_phone', normalizedPhone)
+    .eq('is_active', true)
+    .limit(1);
+
+  if (excludeId) {
+    query = query.neq('id', excludeId);
+  }
+
+  const { data, error } = await query;
+  return { data: data?.[0] || null, error: error?.message };
+}
+
 export async function upsertPatient(
   data: PatientInput,
 ): Promise<{ id: string; error?: string }> {
   try {
     const supabase = getSupabase();
     const normalized_phone = normalizePhone(data.phone);
-    const payload = {
-      ...data,
-      normalized_phone,
-      updated_at: new Date().toISOString(),
-    };
+    const active = await getActivePatientByPhone(normalized_phone);
+    if (active.error?.includes('is_active')) {
+      return { id: '', error: 'Please run the latest Supabase migrations.' };
+    }
 
-    const { data: result, error } = await supabase
-      .from('patients')
-      .upsert(payload, { onConflict: 'normalized_phone' })
-      .select('id')
-      .single();
+    const query = active.data
+      ? supabase
+          .from('patients')
+          .update({
+            ...data,
+            normalized_phone,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', active.data.id)
+          .select('id')
+          .single()
+      : supabase
+          .from('patients')
+          .insert([{ ...data, normalized_phone, is_active: true }])
+          .select('id')
+          .single();
+
+    const { data: result, error } = await query;
 
     if (error) {
       return { id: '', error: error.message };
@@ -160,9 +200,21 @@ export async function createPatient(
   try {
     const supabase = getSupabase();
     const normalized_phone = normalizePhone(data.phone);
+    const active = await getActivePatientByPhone(normalized_phone);
+    if (active.error?.includes('is_active')) {
+      return { id: '', error: 'Please run the latest Supabase migrations.' };
+    }
+    if (active.data) {
+      return {
+        id: '',
+        error:
+          'An active patient with this mobile number already exists. Please use a different number or edit the existing patient.',
+      };
+    }
+
     const { data: result, error } = await supabase
       .from('patients')
-      .insert([{ ...data, normalized_phone }])
+      .insert([{ ...data, normalized_phone, is_active: true }])
       .select('id')
       .single();
 
@@ -171,7 +223,7 @@ export async function createPatient(
         id: '',
         error:
           error.code === '23505'
-            ? 'A patient with this mobile number already exists. Please use a different number or edit the existing patient.'
+            ? 'An active patient with this mobile number already exists. Please use a different number or edit the existing patient.'
             : error.message,
       };
     }
@@ -189,11 +241,24 @@ export async function updatePatient(
 ): Promise<{ data: unknown; error?: string }> {
   try {
     const supabase = getSupabase();
+    const normalized_phone = normalizePhone(data.phone);
+    const active = await getActivePatientByPhone(normalized_phone, id);
+    if (active.error?.includes('is_active')) {
+      return { data: null, error: 'Please run the latest Supabase migrations.' };
+    }
+    if (active.data) {
+      return {
+        data: null,
+        error:
+          'An active patient with this mobile number already exists. Please use a different number.',
+      };
+    }
+
     const { data: result, error } = await supabase
       .from('patients')
       .update({
         ...data,
-        normalized_phone: normalizePhone(data.phone),
+        normalized_phone,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
@@ -204,7 +269,7 @@ export async function updatePatient(
       data: result,
       error:
         error?.code === '23505'
-          ? 'A patient with this mobile number already exists. Please use a different number.'
+          ? 'An active patient with this mobile number already exists. Please use a different number.'
           : error?.message,
     };
   } catch (error) {
@@ -218,29 +283,26 @@ export async function deletePatient(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = getSupabase();
-    const { count: assessmentCount, error: assessmentError } = await supabase
+    const inactiveAt = new Date().toISOString();
+    const { error: assessmentError } = await supabase
       .from('patient_assessments')
-      .select('id', { count: 'exact', head: true })
+      .update({ is_active: false, inactive_at: inactiveAt })
       .eq('patient_id', id);
     if (assessmentError) {
       return { success: false, error: assessmentError.message };
     }
-    const { count: appointmentCount, error: appointmentError } = await supabase
+    const { error: appointmentError } = await supabase
       .from('appointments')
-      .select('id', { count: 'exact', head: true })
+      .update({ is_active: false, inactive_at: inactiveAt })
       .eq('patient_id', id);
     if (appointmentError) {
       return { success: false, error: appointmentError.message };
     }
-    if ((assessmentCount || 0) > 0 || (appointmentCount || 0) > 0) {
-      return {
-        success: false,
-        error:
-          'This patient has linked appointments or PAR-Q forms, so it cannot be deleted.',
-      };
-    }
 
-    const { error } = await supabase.from('patients').delete().eq('id', id);
+    const { error } = await supabase
+      .from('patients')
+      .update({ is_active: false, inactive_at: inactiveAt })
+      .eq('id', id);
     return { success: !error, error: error?.message };
   } catch (error) {
     const err = error as Error;
@@ -332,6 +394,43 @@ export async function updateAppointmentStatus(
   }
 }
 
+export async function updateAppointmentDetails(
+  appointmentId: string,
+  update: AppointmentDetailsUpdate,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = getSupabase();
+    const { data: existing, error: lookupError } = await supabase
+      .from('appointments')
+      .select('status')
+      .eq('id', appointmentId)
+      .single();
+
+    if (lookupError) {
+      return { success: false, error: lookupError.message };
+    }
+    if (finalAppointmentStatuses.has(String(existing?.status || ''))) {
+      return {
+        success: false,
+        error: 'This appointment is already final and cannot be changed.',
+      };
+    }
+
+    const { error } = await supabase
+      .from('appointments')
+      .update({
+        ...update,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', appointmentId);
+
+    return { success: !error, error: error?.message };
+  } catch (error) {
+    const err = error as Error;
+    return { success: false, error: err.message };
+  }
+}
+
 export async function getAppointmentByIdempotencyKey(
   key: string,
 ): Promise<{ id: string | null; error?: string }> {
@@ -357,20 +456,38 @@ export async function getAppointmentByIdempotencyKey(
 export async function listPatients(options: ListOptions = {}) {
   const supabase = getSupabase();
   const [from, to] = pageRange(options);
-  let query = supabase
-    .from('patients')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  const buildQuery = (applyActive: boolean) => {
+    let query = supabase
+      .from('patients')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
-  if (options.search) {
-    const q = options.search.replace(/[%(),]/g, '').trim();
-    query = query.or(
-      `full_name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%`,
-    );
+    if (applyActive) {
+      if (options.active === 'inactive') {
+        query = query.eq('is_active', false);
+      } else if (options.active !== 'all') {
+        query = query.eq('is_active', true);
+      }
+    }
+
+    if (options.search) {
+      const q = options.search.replace(/[%(),]/g, '').trim();
+      query = query.or(
+        `full_name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%`,
+      );
+    }
+
+    return query;
+  };
+
+  let { data, error, count } = await buildQuery(true);
+  if (error?.message.includes('is_active')) {
+    const fallback = await buildQuery(false);
+    data = fallback.data;
+    error = fallback.error;
+    count = fallback.count;
   }
-
-  const { data, error, count } = await query;
   return { data: data || [], count: count || 0, error: error?.message };
 }
 
@@ -387,55 +504,91 @@ export async function getPatient(id: string) {
 export async function listAppointments(options: ListOptions = {}) {
   const supabase = getSupabase();
   const [from, to] = pageRange(options);
-  let query = supabase
-    .from('appointments')
-    .select('*, patients(*)', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  const buildQuery = (applyActive: boolean) => {
+    let query = supabase
+      .from('appointments')
+      .select('*, patients(*)', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
-  if (options.search) {
-    const q = options.search.replace(/[%(),]/g, '').trim();
-    query = query.or(
-      `patient_name.ilike.%${q}%,patient_phone.ilike.%${q}%,patient_location.ilike.%${q}%`,
-    );
-  }
-  if (options.type) {
-    query = query.eq('consultation_type', options.type);
-  }
-  if (options.status) {
-    query = query.eq('status', options.status);
-  }
-  if (options.from) {
-    query = query.gte('preferred_date', options.from);
-  }
-  if (options.to) {
-    query = query.lte('preferred_date', options.to);
-  }
+    if (applyActive) {
+      if (options.active === 'inactive') {
+        query = query.eq('is_active', false);
+      } else if (options.active !== 'all') {
+        query = query.eq('is_active', true);
+      }
+    }
 
-  const { data, error, count } = await query;
+    if (options.search) {
+      const q = options.search.replace(/[%(),]/g, '').trim();
+      query = query.or(
+        `patient_name.ilike.%${q}%,patient_phone.ilike.%${q}%,patient_location.ilike.%${q}%`,
+      );
+    }
+    if (options.type) {
+      query = query.eq('consultation_type', options.type);
+    }
+    if (options.status) {
+      query = query.eq('status', options.status);
+    }
+    if (options.from) {
+      query = query.gte('preferred_date', options.from);
+    }
+    if (options.to) {
+      query = query.lte('preferred_date', options.to);
+    }
+
+    return query;
+  };
+
+  let { data, error, count } = await buildQuery(true);
+  if (error?.message.includes('is_active')) {
+    const fallback = await buildQuery(false);
+    data = fallback.data;
+    error = fallback.error;
+    count = fallback.count;
+  }
   return { data: data || [], count: count || 0, error: error?.message };
 }
 
 export async function listAssessments(options: ListOptions = {}) {
   const supabase = getSupabase();
   const [from, to] = pageRange(options);
-  let query = supabase
-    .from('patient_assessments')
-    .select('*, patients(*), appointments(*)', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  const buildQuery = (applyActive: boolean) => {
+    let query = supabase
+      .from('patient_assessments')
+      .select('*, patients(*), appointments(*)', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
-  if (options.type) {
-    query = query.eq('consultation_type', options.type);
-  }
-  if (options.from) {
-    query = query.gte('created_at', options.from);
-  }
-  if (options.to) {
-    query = query.lte('created_at', options.to);
-  }
+    if (applyActive) {
+      if (options.active === 'inactive') {
+        query = query.eq('is_active', false);
+      } else if (options.active !== 'all') {
+        query = query.eq('is_active', true);
+      }
+    }
 
-  const { data, error, count } = await query;
+    if (options.type) {
+      query = query.eq('consultation_type', options.type);
+    }
+    if (options.from) {
+      query = query.gte('created_at', options.from);
+    }
+    if (options.to) {
+      query = query.lte('created_at', options.to);
+    }
+
+    return query;
+  };
+
+  let { data, error, count } = await buildQuery(true);
+  if (error?.message.includes('is_active')) {
+    const fallback = await buildQuery(false);
+    data = fallback.data;
+    error = fallback.error;
+    count = fallback.count;
+  }
   let rows = data || [];
   if (options.search) {
     const q = options.search.toLowerCase();

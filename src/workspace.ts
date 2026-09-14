@@ -20,16 +20,32 @@ export const workspaceHtml = `
       <input name="appointment-search" placeholder="Search appointments">
       <select name="appointment-type"><option value="">All types</option><option value="home">Home visit</option><option value="online">Online</option></select>
       <select name="appointment-status"><option value="">All statuses</option><option>PENDING</option><option>CONFIRMED</option><option>COMPLETED</option><option>CANCELLED</option><option>NO_SHOW</option></select>
-      <button type="button" class="button-light export-appointments">Export appointments</button>
+      <select name="appointment-active"><option value="">Active</option><option value="inactive">Inactive</option><option value="all">All</option></select>
+      <button type="button" class="button-light export-appointments">Export filtered</button>
     </div>
     <div class="admin-table" data-list="appointments"></div>
+    <form id="appointment-form" class="assessment-form compact-form" hidden>
+      <input type="hidden" name="id">
+      <h3>Appointment details</h3>
+      <div class="form-grid">
+        <label>Consultation type <span class="required">*</span><select name="type" required><option value="home">Home visit</option><option value="online">Online</option></select></label>
+        <label>Preferred date <span class="required">*</span><input name="date" type="date" required></label>
+        <label>Preferred time <span class="required">*</span><input name="time" required maxlength="30"></label>
+      </div>
+      <div class="form-actions">
+        <button class="button" type="submit">Save appointment <span aria-hidden="true">↗</span></button>
+        <button class="button-light cancel-appointment" type="button">Cancel</button>
+      </div>
+      <div class="form-status" role="status" tabindex="-1"></div>
+    </form>
   </section>
 
   <section class="admin-panel" data-panel="patients" hidden>
     <div class="admin-toolbar">
       <input name="patient-search" placeholder="Search patients">
+      <select name="patient-active"><option value="">Active</option><option value="inactive">Inactive</option><option value="all">All</option></select>
       <button type="button" class="button-light new-patient">New patient</button>
-      <button type="button" class="button-light export-patients">Export patients</button>
+      <button type="button" class="button-light export-patients">Export filtered</button>
     </div>
     <div class="admin-table" data-list="patients"></div>
     <form id="patient-form" class="assessment-form compact-form" hidden>
@@ -58,8 +74,9 @@ export const workspaceHtml = `
     <div class="admin-toolbar">
       <input name="assessment-search" placeholder="Search PAR-Q forms">
       <select name="assessment-type"><option value="">All types</option><option>Home Visit</option><option>Online Physiotherapy</option><option>Teleconsultation</option><option>Follow-up</option></select>
+      <select name="assessment-active"><option value="">Active</option><option value="inactive">Inactive</option><option value="all">All</option></select>
       <button type="button" class="button-light new-assessment">New PAR-Q</button>
-      <button type="button" class="button-light export-assessments">Export PAR-Q</button>
+      <button type="button" class="button-light export-assessments">Export filtered</button>
     </div>
     <div class="admin-table" data-list="assessments"></div>
     <form id="assessment-form" class="assessment-form" hidden>

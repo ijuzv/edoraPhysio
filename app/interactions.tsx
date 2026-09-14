@@ -116,6 +116,55 @@ export default function Interactions(): null {
       }
     };
 
+    const withButtonLoading = async <T,>(
+      button: HTMLButtonElement | null | undefined,
+      label: string,
+      task: () => Promise<T>,
+    ): Promise<T> => {
+      if (!button) {
+        return task();
+      }
+      if (button.disabled) {
+        throw new Error('Please wait for the current action to finish.');
+      }
+      const original = button.innerHTML;
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      button.dataset.loading = 'true';
+      button.innerHTML = `${label}<span aria-hidden="true">...</span>`;
+      try {
+        return await task();
+      } finally {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        delete button.dataset.loading;
+        button.innerHTML = original;
+      }
+    };
+
+    const showLinkLoading = (link: HTMLAnchorElement, label = 'Opening') => {
+      if (link.dataset.loading === 'true') return;
+      const original = link.innerHTML;
+      link.setAttribute('aria-busy', 'true');
+      link.dataset.loading = 'true';
+      link.innerHTML = `${label}<span aria-hidden="true">...</span>`;
+      if (link.target === '_blank') {
+        window.setTimeout(() => {
+          link.removeAttribute('aria-busy');
+          delete link.dataset.loading;
+          link.innerHTML = original;
+        }, 1200);
+      }
+    };
+
+    listen(document, 'click', (event) => {
+      const link = (event.target as HTMLElement).closest(
+        'a.button, a.nav-book, a.whatsapp',
+      ) as HTMLAnchorElement | null;
+      if (!link || !link.href || link.dataset.loading === 'true') return;
+      showLinkLoading(link);
+    });
+
     const requestKeys = new WeakMap<HTMLFormElement, FormState>();
 
     async function submitForm(
@@ -217,7 +266,6 @@ export default function Interactions(): null {
         const button = booking.querySelector(
           'button[type=submit]',
         ) as HTMLButtonElement;
-        button.disabled = true;
 
         const fallback = booking.querySelector(
           '.request-fallback',
@@ -226,46 +274,46 @@ export default function Interactions(): null {
           fallback.hidden = true;
         }
 
-        try {
-          await submitForm(booking, '/api/bookings', data);
-          status(
-            booking,
-            "Thank you. Your consultation request has been received. We'll contact you to discuss availability; your appointment is not yet confirmed.",
-          );
-          booking.reset();
-          requestKeys.delete(booking);
-        } catch (error) {
-          const err = error as Error & { code?: string };
-          status(booking, err.message, true);
+        await withButtonLoading(button, 'Sending', async () => {
+          try {
+            await submitForm(booking, '/api/bookings', data);
+            status(
+              booking,
+              "Thank you. Your consultation request has been received. We'll contact you to discuss availability; your appointment is not yet confirmed.",
+            );
+            booking.reset();
+            requestKeys.delete(booking);
+          } catch (error) {
+            const err = error as Error & { code?: string };
+            status(booking, err.message, true);
 
-          const fallbackDiv = booking.querySelector(
-            '.request-fallback',
-          ) as HTMLElement | null;
-          if (fallbackDiv) {
-            fallbackDiv.hidden = false;
+            const fallbackDiv = booking.querySelector(
+              '.request-fallback',
+            ) as HTMLElement | null;
+            if (fallbackDiv) {
+              fallbackDiv.hidden = false;
 
-            const message = `Hello Eudora Movement House, I would like to request a consultation.\nName: ${
-              data.name
-            }\nAge: ${data.age}\nPhone: ${data.phone}\nLocation: ${
-              data.location
-            }\nConsultation: ${
-              data.type === 'online' ? 'Online' : 'Home visit'
-            }\nPreferred date: ${
-              data.date
-            }\nPreferred time: ${data.time} IST\nI understand the appointment will be confirmed separately.`;
+              const message = `Hello Eudora Movement House, I would like to request a consultation.\nName: ${
+                data.name
+              }\nAge: ${data.age}\nPhone: ${data.phone}\nLocation: ${
+                data.location
+              }\nConsultation: ${
+                data.type === 'online' ? 'Online' : 'Home visit'
+              }\nPreferred date: ${
+                data.date
+              }\nPreferred time: ${data.time} IST\nI understand the appointment will be confirmed separately.`;
 
-            const whatsappLink = booking.querySelector(
-              '#whatsapp-request',
-            ) as HTMLAnchorElement | null;
-            if (whatsappLink) {
-              whatsappLink.href =
-                'https://wa.me/917418158876?text=' +
-                encodeURIComponent(message);
+              const whatsappLink = booking.querySelector(
+                '#whatsapp-request',
+              ) as HTMLAnchorElement | null;
+              if (whatsappLink) {
+                whatsappLink.href =
+                  'https://wa.me/917418158876?text=' +
+                  encodeURIComponent(message);
+              }
             }
           }
-        } finally {
-          button.disabled = false;
-        }
+        });
       });
     }
 
@@ -281,29 +329,28 @@ export default function Interactions(): null {
       }
 
       const button = feedback.querySelector('button') as HTMLButtonElement;
-      button.disabled = true;
 
-      try {
-        const formData = new FormData(feedback);
-        const data = Object.fromEntries(formData) as Record<string, unknown>;
-        const consentCheckbox = feedback.elements.namedItem(
-          'consent',
-        ) as HTMLInputElement;
-        data.consent = consentCheckbox.checked;
+      await withButtonLoading(button, 'Sending', async () => {
+        try {
+          const formData = new FormData(feedback);
+          const data = Object.fromEntries(formData) as Record<string, unknown>;
+          const consentCheckbox = feedback.elements.namedItem(
+            'consent',
+          ) as HTMLInputElement;
+          data.consent = consentCheckbox.checked;
 
-        await submitForm(feedback, '/api/feedback', data);
-        status(
-          feedback,
-          'Thank you for sharing your feedback. It has been received privately.',
-        );
-        feedback.reset();
-        requestKeys.delete(feedback);
-      } catch (error) {
-        const err = error as Error;
-        status(feedback, err.message, true);
-      } finally {
-        button.disabled = false;
-      }
+          await submitForm(feedback, '/api/feedback', data);
+          status(
+            feedback,
+            'Thank you for sharing your feedback. It has been received privately.',
+          );
+          feedback.reset();
+          requestKeys.delete(feedback);
+        } catch (error) {
+          const err = error as Error;
+          status(feedback, err.message, true);
+        }
+      });
     });
 
     // Practitioner workspace
@@ -362,34 +409,33 @@ export default function Interactions(): null {
         e.preventDefault();
 
         const button = login.querySelector('button') as HTMLButtonElement;
-        button.disabled = true;
 
-        try {
-          const keyInput = login.elements.namedItem('key') as HTMLInputElement;
-          const r = await fetch('/api/practitioner/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ key: keyInput.value }),
-          });
+        await withButtonLoading(button, 'Opening', async () => {
+          try {
+            const keyInput = login.elements.namedItem('key') as HTMLInputElement;
+            const r = await fetch('/api/practitioner/login', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ key: keyInput.value }),
+            });
 
-          const data = (await r.json()) as {
-            error?: string;
-          };
+            const data = (await r.json()) as {
+              error?: string;
+            };
 
-          if (!r.ok) {
-            throw Error(data.error);
+            if (!r.ok) {
+              throw Error(data.error);
+            }
+
+            login.reset();
+            await openWorkspace();
+          } catch (error) {
+            const err = error as Error;
+            status(login, err.message, true);
           }
-
-          login.reset();
-          await openWorkspace();
-        } catch (error) {
-          const err = error as Error;
-          status(login, err.message, true);
-        } finally {
-          button.disabled = false;
-        }
+        });
       });
     }
 
@@ -468,23 +514,247 @@ export default function Interactions(): null {
         return [keys.join(','), ...rows.map((row) => keys.map((key) => cell(row[key])).join(','))].join('\n');
       };
 
+      const valueText = (value: unknown): string => {
+        if (Array.isArray(value)) return value.filter(Boolean).join(', ');
+        if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+        if (value && typeof value === 'object') return JSON.stringify(value, null, 2);
+        return String(value ?? '').trim();
+      };
+
+      const hasValue = (value: unknown): boolean => {
+        if (Array.isArray(value)) return value.filter(Boolean).length > 0;
+        if (value && typeof value === 'object') return Object.keys(value).length > 0;
+        return valueText(value).length > 0;
+      };
+
+      const patientDetailPairs = (patient: any): Array<[string, unknown]> => [
+        ['Full name', patient.full_name],
+        ['Age', patient.age],
+        ['Gender', patient.gender],
+        ['Date of birth', patient.date_of_birth],
+        ['Mobile number', patient.phone],
+        ['Email address', patient.email],
+        ['Full residential address', patient.address],
+        ['Emergency contact full name', patient.emergency_contact_name],
+        ['Emergency contact phone number', patient.emergency_contact_phone],
+        ['Status', patient.is_active === false ? 'Inactive' : 'Active'],
+      ];
+
+      const patientCsvRow = (patient: any): Record<string, unknown> => ({
+        full_name: patient.full_name,
+        age: patient.age,
+        gender: patient.gender,
+        date_of_birth: patient.date_of_birth,
+        mobile_number: patient.phone,
+        email_address: patient.email,
+        full_residential_address: patient.address,
+        emergency_contact_full_name: patient.emergency_contact_name,
+        emergency_contact_phone_number: patient.emergency_contact_phone,
+        status: patient.is_active === false ? 'Inactive' : 'Active',
+      });
+
+      const patientCsvKeys = [
+        'full_name',
+        'age',
+        'gender',
+        'date_of_birth',
+        'mobile_number',
+        'email_address',
+        'full_residential_address',
+        'emergency_contact_full_name',
+        'emergency_contact_phone_number',
+        'status',
+      ];
+
+      const appointmentCsvRow = (appointment: any): Record<string, unknown> => ({
+        patient_name: appointment.patient_name,
+        patient_age: appointment.patient_age,
+        patient_phone: appointment.patient_phone,
+        patient_location: appointment.patient_location,
+        consultation_type: appointment.consultation_type,
+        preferred_date: appointment.preferred_date,
+        preferred_time: appointment.preferred_time,
+        appointment_status: appointment.status,
+        request_received_at: appointment.created_at,
+        notification_sent: valueText(appointment.whatsapp_sent),
+        notification_sent_at: appointment.whatsapp_sent_at,
+        notification_message_id: appointment.whatsapp_message_id,
+        notification_error: appointment.whatsapp_error,
+        privacy_consent: valueText(appointment.privacy_consent),
+        status: appointment.is_active === false ? 'Inactive' : 'Active',
+      });
+
+      const appointmentCsvKeys = [
+        'patient_name',
+        'patient_age',
+        'patient_phone',
+        'patient_location',
+        'consultation_type',
+        'preferred_date',
+        'preferred_time',
+        'appointment_status',
+        'request_received_at',
+        'notification_sent',
+        'notification_sent_at',
+        'notification_message_id',
+        'notification_error',
+        'privacy_consent',
+        'status',
+      ];
+
+      const assessmentPatient = (assessment: any): any =>
+        assessment.patients || assessment.form_data?.patient || {};
+
+      const assessmentValue = (assessment: any, key: string): unknown =>
+        assessment.form_data?.[key] ?? assessment[key];
+
+      const assessmentDetailPairs = (
+        assessment: any,
+      ): Array<[string, unknown]> => {
+        const patient = assessmentPatient(assessment);
+        const parq = assessmentValue(assessment, 'parq_answers') || {};
+        return [
+          ...patientDetailPairs(patient).filter(([label]) => label !== 'Status'),
+          ['Consultation type', assessmentValue(assessment, 'consultation_type')],
+          ['Preferred day and time', assessmentValue(assessment, 'preferred_day_time')],
+          ['How did you hear about Eudora?', assessmentValue(assessment, 'referral_source')],
+          ['Main problem / reason for consultation', assessmentValue(assessment, 'main_problem')],
+          ['Duration of complaint', assessmentValue(assessment, 'duration_of_complaint')],
+          ['Region/location of symptoms', assessmentValue(assessment, 'symptom_region')],
+          ['Side', assessmentValue(assessment, 'symptom_side')],
+          ['Range', assessmentValue(assessment, 'movement_range')],
+          ['Pain presentation', assessmentValue(assessment, 'pain_presentation')],
+          ['Onset', assessmentValue(assessment, 'complaint_onset')],
+          ['Pain severity 0-10', assessmentValue(assessment, 'pain_severity')],
+          ['Activities that aggravate symptoms', assessmentValue(assessment, 'aggravating_activities')],
+          ['Factors that relieve symptoms', assessmentValue(assessment, 'relieving_factors')],
+          ['Medical conditions', assessmentValue(assessment, 'medical_conditions')],
+          ['Other medical condition', assessmentValue(assessment, 'other_medical_condition')],
+          ['Surgery/procedure history', assessmentValue(assessment, 'surgery_status')],
+          ['Surgery/procedure details', assessmentValue(assessment, 'surgery_details')],
+          ['Current medications', assessmentValue(assessment, 'current_medications')],
+          ['Previous investigations', assessmentValue(assessment, 'investigations')],
+          ...parqQuestions.map(
+            ([key, question]) =>
+              [`PAR-Q - ${question}`, (parq as Record<string, unknown>)[key]] as [
+                string,
+                unknown,
+              ],
+          ),
+          ['PAR-Q additional details', assessmentValue(assessment, 'parq_details')],
+          ['Consent confirmed', assessmentValue(assessment, 'consent_confirmed')],
+          ['Electronic signature', assessmentValue(assessment, 'electronic_signature')],
+          ['Status', assessment.is_active === false ? 'Inactive' : 'Active'],
+        ];
+      };
+
+      const assessmentCsvRow = (assessment: any): Record<string, unknown> => {
+        const patient = assessmentPatient(assessment);
+        const parq = assessmentValue(assessment, 'parq_answers') || {};
+        return {
+          full_name: patient.full_name,
+          age: patient.age,
+          gender: patient.gender,
+          date_of_birth: patient.date_of_birth,
+          mobile_number: patient.phone,
+          email_address: patient.email,
+          full_residential_address: patient.address,
+          emergency_contact_full_name: patient.emergency_contact_name,
+          emergency_contact_phone_number: patient.emergency_contact_phone,
+          consultation_type: assessmentValue(assessment, 'consultation_type'),
+          preferred_day_time: assessmentValue(assessment, 'preferred_day_time'),
+          heard_about_eudora: assessmentValue(assessment, 'referral_source'),
+          main_problem: assessmentValue(assessment, 'main_problem'),
+          duration_of_complaint: assessmentValue(assessment, 'duration_of_complaint'),
+          symptom_region: assessmentValue(assessment, 'symptom_region'),
+          side: assessmentValue(assessment, 'symptom_side'),
+          range: assessmentValue(assessment, 'movement_range'),
+          pain_presentation: assessmentValue(assessment, 'pain_presentation'),
+          onset: assessmentValue(assessment, 'complaint_onset'),
+          pain_severity: assessmentValue(assessment, 'pain_severity'),
+          aggravating_activities: assessmentValue(assessment, 'aggravating_activities'),
+          relieving_factors: assessmentValue(assessment, 'relieving_factors'),
+          medical_conditions: valueText(assessmentValue(assessment, 'medical_conditions')),
+          other_medical_condition: assessmentValue(assessment, 'other_medical_condition'),
+          surgery_status: assessmentValue(assessment, 'surgery_status'),
+          surgery_details: assessmentValue(assessment, 'surgery_details'),
+          current_medications: assessmentValue(assessment, 'current_medications'),
+          investigations: valueText(assessmentValue(assessment, 'investigations')),
+          ...Object.fromEntries(
+            parqQuestions.map(([key]) => [
+              `parq_${key}`,
+              (parq as Record<string, unknown>)[key],
+            ]),
+          ),
+          parq_details: assessmentValue(assessment, 'parq_details'),
+          consent_confirmed: valueText(assessmentValue(assessment, 'consent_confirmed')),
+          electronic_signature: assessmentValue(assessment, 'electronic_signature'),
+          status: assessment.is_active === false ? 'Inactive' : 'Active',
+        };
+      };
+
+      const assessmentCsvKeys = [
+        'full_name',
+        'age',
+        'gender',
+        'date_of_birth',
+        'mobile_number',
+        'email_address',
+        'full_residential_address',
+        'emergency_contact_full_name',
+        'emergency_contact_phone_number',
+        'consultation_type',
+        'preferred_day_time',
+        'heard_about_eudora',
+        'main_problem',
+        'duration_of_complaint',
+        'symptom_region',
+        'side',
+        'range',
+        'pain_presentation',
+        'onset',
+        'pain_severity',
+        'aggravating_activities',
+        'relieving_factors',
+        'medical_conditions',
+        'other_medical_condition',
+        'surgery_status',
+        'surgery_details',
+        'current_medications',
+        'investigations',
+        ...parqQuestions.map(([key]) => `parq_${key}`),
+        'parq_details',
+        'consent_confirmed',
+        'electronic_signature',
+        'status',
+      ];
+
       const detailHtml = (title: string, pairs: Array<[string, unknown]>): string => {
-        return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Arial,sans-serif;padding:32px;line-height:1.6;color:#173e3b}h1{font-family:Georgia,serif}dt{font-weight:700;margin-top:12px}dd{margin:0 0 8px;white-space:pre-wrap}</style></head><body><h1>${esc(title)}</h1><dl>${pairs.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(Array.isArray(v) ? v.join(', ') : v || '—')}</dd>`).join('')}</dl></body></html>`;
+        const rows = pairs.filter(([, value]) => hasValue(value));
+        return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Arial,sans-serif;padding:32px;line-height:1.6;color:#173e3b}h1{font-family:Georgia,serif}dt{font-weight:700;margin-top:12px}dd{margin:0 0 8px;white-space:pre-wrap}</style></head><body><h1>${esc(title)}</h1><dl>${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(valueText(v))}</dd>`).join('')}</dl></body></html>`;
       };
 
       const renderPager = (
         target: HTMLElement,
         total: number,
         page: number,
-        load: (next: number) => void,
+        load: (next: number) => Promise<void>,
       ): void => {
         const pages = Math.max(1, Math.ceil(total / 10));
         const pager = document.createElement('div');
         pager.className = 'admin-pager';
         pager.innerHTML = `<button ${page <= 1 ? 'disabled' : ''}>Previous</button><span>Page ${page} of ${pages}</span><button ${page >= pages ? 'disabled' : ''}>Next</button>`;
         const buttons = pager.querySelectorAll('button');
-        listen(buttons[0], 'click', () => load(page - 1));
-        listen(buttons[1], 'click', () => load(page + 1));
+        listen(buttons[0], 'click', async () => {
+          await withButtonLoading(buttons[0] as HTMLButtonElement, 'Loading', () =>
+            load(page - 1),
+          );
+        });
+        listen(buttons[1], 'click', async () => {
+          await withButtonLoading(buttons[1] as HTMLButtonElement, 'Loading', () =>
+            load(page + 1),
+          );
+        });
         target.appendChild(pager);
       };
 
@@ -495,6 +765,7 @@ export default function Interactions(): null {
           search: (container.querySelector('[name=appointment-search]') as HTMLInputElement)?.value || '',
           type: (container.querySelector('[name=appointment-type]') as HTMLSelectElement)?.value || '',
           status: (container.querySelector('[name=appointment-status]') as HTMLSelectElement)?.value || '',
+          active: (container.querySelector('[name=appointment-active]') as HTMLSelectElement)?.value || '',
         });
         const result = await api('/api/practitioner/appointments?' + q);
         adminState.appointments = result.data || [];
@@ -503,7 +774,7 @@ export default function Interactions(): null {
         const finalStatuses = new Set(['COMPLETED', 'CANCELLED', 'NO_SHOW']);
         target.innerHTML = `<table><thead><tr><th>Patient</th><th>Phone</th><th>Type</th><th>Preferred</th><th>Status</th></tr></thead><tbody>${adminState.appointments.map((x) => {
           const currentStatus = String(x.status || '').toUpperCase();
-          return `<tr><td><strong>${esc(x.patient_name)}</strong></td><td>${esc(x.patient_phone)}</td><td><span class="admin-chip">${esc(x.consultation_type)}</span></td><td>${esc(x.preferred_date)}<br><span class="muted">${esc(x.preferred_time)}</span></td><td><select class="status-select" data-status="${esc(currentStatus)}" data-appointment-status="${esc(x.id)}" ${finalStatuses.has(currentStatus) ? 'disabled title="Final status cannot be changed"' : ''}>${statuses.map((status) => `<option value="${esc(status)}" ${currentStatus === status ? 'selected' : ''}>${esc(status)}</option>`).join('')}</select></td></tr>`;
+          return `<tr class="${x.is_active === false ? 'is-inactive' : ''}"><td><strong>${esc(x.patient_name)}</strong>${x.is_active === false ? '<span class="admin-chip muted-chip">Inactive</span>' : ''}</td><td>${esc(x.patient_phone)}</td><td><span class="admin-chip">${esc(x.consultation_type)}</span></td><td>${esc(x.preferred_date)}<br><span class="muted">${esc(x.preferred_time)}</span></td><td><select class="status-select" data-status="${esc(currentStatus)}" data-appointment-status="${esc(x.id)}" ${finalStatuses.has(currentStatus) || x.is_active === false ? 'disabled title="Final status cannot be changed"' : ''}>${statuses.map((status) => `<option value="${esc(status)}" ${currentStatus === status ? 'selected' : ''}>${esc(status)}</option>`).join('')}</select></td><td><button type="button" data-edit-appointment="${esc(x.id)}" ${finalStatuses.has(currentStatus) || x.is_active === false ? 'disabled' : ''}>Edit</button></td></tr>`;
         }).join('')}</tbody></table>`;
         renderPager(target, result.count || 0, page, loadAppointments);
       };
@@ -528,12 +799,13 @@ export default function Interactions(): null {
           page: String(page),
           pageSize: '10',
           search: (container.querySelector('[name=patient-search]') as HTMLInputElement)?.value || '',
+          active: (container.querySelector('[name=patient-active]') as HTMLSelectElement)?.value || '',
         });
         const result = await api('/api/practitioner/patients?' + q);
         adminState.patients = result.data || [];
         syncPatientSelect();
         const target = container.querySelector('[data-list=patients]') as HTMLElement;
-        target.innerHTML = `<table><thead><tr><th>Name</th><th>Phone</th><th>Age</th><th>Email</th><th></th></tr></thead><tbody>${adminState.patients.map((x) => `<tr><td>${esc(x.full_name)}</td><td>${esc(x.phone)}</td><td>${esc(x.age || '')}</td><td>${esc(x.email || '')}</td><td><button type="button" data-edit-patient="${esc(x.id)}">Edit</button><button type="button" data-download-patient="${esc(x.id)}">Download</button><button type="button" data-delete-patient="${esc(x.id)}">Delete</button></td></tr>`).join('')}</tbody></table>`;
+        target.innerHTML = `<table><thead><tr><th>Name</th><th>Phone</th><th>Age</th><th>Email</th><th></th></tr></thead><tbody>${adminState.patients.map((x) => `<tr class="${x.is_active === false ? 'is-inactive' : ''}"><td><strong>${esc(x.full_name)}</strong>${x.is_active === false ? '<span class="admin-chip muted-chip">Inactive</span>' : ''}</td><td>${esc(x.phone)}</td><td>${esc(x.age || '')}</td><td>${esc(x.email || '')}</td><td><button type="button" data-edit-patient="${esc(x.id)}" ${x.is_active === false ? 'disabled' : ''}>Edit</button><button type="button" data-download-patient="${esc(x.id)}">Download</button><button type="button" data-delete-patient="${esc(x.id)}" ${x.is_active === false ? 'disabled' : ''}>Make inactive</button></td></tr>`).join('')}</tbody></table>`;
         renderPager(target, result.count || 0, page, loadPatients);
       };
 
@@ -543,11 +815,12 @@ export default function Interactions(): null {
           pageSize: '10',
           search: (container.querySelector('[name=assessment-search]') as HTMLInputElement)?.value || '',
           type: (container.querySelector('[name=assessment-type]') as HTMLSelectElement)?.value || '',
+          active: (container.querySelector('[name=assessment-active]') as HTMLSelectElement)?.value || '',
         });
         const result = await api('/api/practitioner/assessments?' + q);
         adminState.assessments = result.data || [];
         const target = container.querySelector('[data-list=assessments]') as HTMLElement;
-        target.innerHTML = `<table><thead><tr><th>Patient</th><th>Problem</th><th>Type</th><th>Date</th><th></th></tr></thead><tbody>${adminState.assessments.map((x) => `<tr><td>${esc(x.patients?.full_name || '')}</td><td>${esc(x.main_problem)}</td><td>${esc(x.consultation_type || '')}</td><td>${esc(String(x.created_at || '').slice(0, 10))}</td><td><button type="button" data-edit-assessment="${esc(x.id)}">Edit</button><button type="button" data-download-assessment="${esc(x.id)}">Download</button><button type="button" data-delete-assessment="${esc(x.id)}">Delete</button></td></tr>`).join('')}</tbody></table>`;
+        target.innerHTML = `<table><thead><tr><th>Patient</th><th>Problem</th><th>Type</th><th>Date</th><th></th></tr></thead><tbody>${adminState.assessments.map((x) => `<tr class="${x.is_active === false ? 'is-inactive' : ''}"><td>${esc(x.patients?.full_name || '')}${x.is_active === false ? '<span class="admin-chip muted-chip">Inactive</span>' : ''}</td><td>${esc(x.main_problem)}</td><td>${esc(x.consultation_type || '')}</td><td>${esc(String(x.created_at || '').slice(0, 10))}</td><td><button type="button" data-edit-assessment="${esc(x.id)}" ${x.is_active === false ? 'disabled' : ''}>Edit</button><button type="button" data-download-assessment="${esc(x.id)}">Download</button><button type="button" data-delete-assessment="${esc(x.id)}" ${x.is_active === false ? 'disabled' : ''}>Delete</button></td></tr>`).join('')}</tbody></table>`;
         renderPager(target, result.count || 0, page, loadAssessments);
       };
 
@@ -574,6 +847,9 @@ export default function Interactions(): null {
       ) as HTMLFormElement | null;
       const patientForm = container.querySelector(
         '#patient-form',
+      ) as HTMLFormElement | null;
+      const appointmentForm = container.querySelector(
+        '#appointment-form',
       ) as HTMLFormElement | null;
 
       const fieldValue = (
@@ -652,6 +928,27 @@ export default function Interactions(): null {
 
       const patientValue = (name: string): string =>
         patientForm ? fieldValue(patientForm, name) : '';
+
+      const appointmentValue = (name: string): string =>
+        appointmentForm ? fieldValue(appointmentForm, name) : '';
+
+      const showAppointmentForm = (record: any): void => {
+        if (!appointmentForm) return;
+        appointmentForm.reset();
+        appointmentForm.hidden = false;
+        appointmentForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const set = (name: string, value: unknown) => {
+          const field = appointmentForm.elements.namedItem(name) as
+            | HTMLInputElement
+            | HTMLSelectElement
+            | null;
+          if (field) field.value = String(value ?? '');
+        };
+        set('id', record.id);
+        set('type', record.consultation_type);
+        set('date', record.preferred_date);
+        set('time', record.preferred_time);
+      };
 
       const collectPatient = (): Record<string, unknown> => ({
         full_name: patientValue('full_name'),
@@ -904,27 +1201,61 @@ export default function Interactions(): null {
       listen(container.querySelector('.cancel-patient'), 'click', () => {
         if (patientForm) patientForm.hidden = true;
       });
+      listen(container.querySelector('.cancel-appointment'), 'click', () => {
+        if (appointmentForm) appointmentForm.hidden = true;
+      });
+
+      listen(appointmentForm, 'submit', async (event) => {
+        event.preventDefault();
+        if (!appointmentForm || !appointmentForm.reportValidity()) return;
+        const id = appointmentValue('id');
+        const button = appointmentForm.querySelector(
+          'button[type=submit]',
+        ) as HTMLButtonElement | null;
+        await withButtonLoading(button, 'Saving', async () => {
+          try {
+            await api(`/api/practitioner/appointments/${encodeURIComponent(id)}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                type: appointmentValue('type'),
+                date: appointmentValue('date'),
+                time: appointmentValue('time'),
+              }),
+            });
+            status(appointmentForm, 'Appointment saved.');
+            appointmentForm.hidden = true;
+            await loadAppointments();
+          } catch (error) {
+            status(appointmentForm, (error as Error).message, true);
+          }
+        });
+      });
 
       listen(patientForm, 'submit', async (event) => {
         event.preventDefault();
         if (!patientForm || !patientForm.reportValidity()) return;
         const id = patientValue('id');
-        try {
-          await api(
-            id
-              ? `/api/practitioner/patients/${encodeURIComponent(id)}`
-              : '/api/practitioner/patients',
-            {
-              method: id ? 'PUT' : 'POST',
-              body: JSON.stringify(collectPatient()),
-            },
-          );
-          status(patientForm, 'Patient saved.');
-          patientForm.hidden = true;
-          await loadPatients();
-        } catch (error) {
-          status(patientForm, (error as Error).message, true);
-        }
+        const button = patientForm.querySelector(
+          'button[type=submit]',
+        ) as HTMLButtonElement | null;
+        await withButtonLoading(button, 'Saving', async () => {
+          try {
+            await api(
+              id
+                ? `/api/practitioner/patients/${encodeURIComponent(id)}`
+                : '/api/practitioner/patients',
+              {
+                method: id ? 'PUT' : 'POST',
+                body: JSON.stringify(collectPatient()),
+              },
+            );
+            status(patientForm, 'Patient saved.');
+            patientForm.hidden = true;
+            await loadPatients();
+          } catch (error) {
+            status(patientForm, (error as Error).message, true);
+          }
+        });
       });
 
       listen(assessmentForm, 'submit', async (event) => {
@@ -952,29 +1283,41 @@ export default function Interactions(): null {
         }
         const id = formValue('id');
         const payload = collectAssessment();
-        try {
-          await api(
-            id
-              ? `/api/practitioner/assessments/${encodeURIComponent(id)}`
-              : '/api/practitioner/assessments',
-            {
-              method: id ? 'PUT' : 'POST',
-              body: JSON.stringify(payload),
-            },
-          );
-          showAssessmentStatus('PAR-Q form saved.');
-          assessmentForm.hidden = true;
-          await loadAssessments();
-          await loadPatients();
-        } catch (error) {
-          showAssessmentStatus((error as Error).message, true);
-        }
+        const button = assessmentForm.querySelector(
+          'button[type=submit]',
+        ) as HTMLButtonElement | null;
+        await withButtonLoading(button, 'Saving', async () => {
+          try {
+            await api(
+              id
+                ? `/api/practitioner/assessments/${encodeURIComponent(id)}`
+                : '/api/practitioner/assessments',
+              {
+                method: id ? 'PUT' : 'POST',
+                body: JSON.stringify(payload),
+              },
+            );
+            showAssessmentStatus('PAR-Q form saved.');
+            assessmentForm.hidden = true;
+            await loadAssessments();
+            await loadPatients();
+          } catch (error) {
+            showAssessmentStatus((error as Error).message, true);
+          }
+        });
       });
 
       listen(container, 'click', async (event) => {
         const target = event.target as HTMLElement;
         const button = target.closest('button') as HTMLButtonElement | null;
         if (!button) return;
+        const editAppointmentId = button.dataset.editAppointment;
+        if (editAppointmentId) {
+          const record = adminState.appointments.find(
+            (x) => x.id === editAppointmentId,
+          );
+          if (record) showAppointmentForm(record);
+        }
         const editId = button.dataset.editAssessment;
         if (editId) {
           const record = adminState.assessments.find((x) => x.id === editId);
@@ -982,10 +1325,12 @@ export default function Interactions(): null {
         }
         const deleteId = button.dataset.deleteAssessment;
         if (deleteId && confirm('Delete this PAR-Q form?')) {
-          await api(`/api/practitioner/assessments/${deleteId}`, {
-            method: 'DELETE',
+          await withButtonLoading(button, 'Deleting', async () => {
+            await api(`/api/practitioner/assessments/${deleteId}`, {
+              method: 'DELETE',
+            });
+            await loadAssessments();
           });
-          await loadAssessments();
         }
         const editPatientId = button.dataset.editPatient;
         if (editPatientId) {
@@ -993,13 +1338,20 @@ export default function Interactions(): null {
           showPatientForm(row);
         }
         const deletePatientId = button.dataset.deletePatient;
-        if (deletePatientId && confirm('Delete this patient?')) {
+        if (
+          deletePatientId &&
+          confirm(
+            'This will make the patient inactive and also hide linked PAR-Q forms and mapped appointments from active lists. Continue?',
+          )
+        ) {
           try {
-            await api(`/api/practitioner/patients/${deletePatientId}`, {
-              method: 'DELETE',
+            await withButtonLoading(button, 'Updating', async () => {
+              await api(`/api/practitioner/patients/${deletePatientId}`, {
+                method: 'DELETE',
+              });
+              await loadPatients();
+              await loadAssessments();
             });
-            await loadPatients();
-            await loadAssessments();
           } catch (error) {
             alert((error as Error).message);
           }
@@ -1007,48 +1359,24 @@ export default function Interactions(): null {
         const patientId = button.dataset.downloadPatient;
         if (patientId) {
           const row = adminState.patients.find((x) => x.id === patientId);
-          download(
-            `patient-${row.full_name || 'details'}.html`,
-            detailHtml('Patient details', [
-              ['Name', row.full_name],
-              ['Age', row.age],
-              ['Gender', row.gender],
-              ['Date of birth', row.date_of_birth],
-              ['Phone', row.phone],
-              ['Email', row.email],
-              ['Address', row.address],
-              ['Emergency contact', row.emergency_contact_name],
-              ['Emergency phone', row.emergency_contact_phone],
-            ]),
-            'text/html',
-          );
+          await withButtonLoading(button, 'Preparing', async () => {
+            download(
+              `patient-${row.full_name || 'details'}.html`,
+              detailHtml('Patient details', patientDetailPairs(row)),
+              'text/html',
+            );
+          });
         }
         const assessmentId = button.dataset.downloadAssessment;
         if (assessmentId) {
           const row = adminState.assessments.find((x) => x.id === assessmentId);
-          const patient = row.patients || {};
-          download(
-            `parq-${patient.full_name || 'details'}.html`,
-            detailHtml('PAR-Q / Assessment details', [
-              ['Patient', patient.full_name],
-              ['Phone', patient.phone],
-              ['Consultation type', row.consultation_type],
-              ['Main problem', row.main_problem],
-              ['Duration', row.duration_of_complaint],
-              ['Symptoms', row.symptom_region],
-              ['Pain severity', row.pain_severity],
-              ['Aggravating activities', row.aggravating_activities],
-              ['Relieving factors', row.relieving_factors],
-              ['Medical conditions', row.medical_conditions],
-              ['Surgery details', row.surgery_details],
-              ['Current medications', row.current_medications],
-              ['Investigations', row.investigations],
-              ['PAR-Q answers', JSON.stringify(row.parq_answers, null, 2)],
-              ['PAR-Q details', row.parq_details],
-              ['Electronic signature', row.electronic_signature],
-            ]),
-            'text/html',
-          );
+          await withButtonLoading(button, 'Preparing', async () => {
+            download(
+              `parq-${assessmentPatient(row).full_name || 'details'}.html`,
+              detailHtml('PAR-Q / Assessment details', assessmentDetailPairs(row)),
+              'text/html',
+            );
+          });
         }
       });
 
@@ -1065,7 +1393,18 @@ export default function Interactions(): null {
         if (!appointmentId) return;
         const row = adminState.appointments.find((x) => x.id === appointmentId);
         const previousStatus = String(row?.status || '').toUpperCase();
+        if (
+          ['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(target.value) &&
+          !confirm(
+            `${target.value} is final. You will not be able to change this appointment status again. Continue?`,
+          )
+        ) {
+          target.value = previousStatus;
+          return;
+        }
         try {
+          target.disabled = true;
+          target.setAttribute('aria-busy', 'true');
           await api(`/api/practitioner/appointments/${appointmentId}`, {
             method: 'PUT',
             body: JSON.stringify({ status: target.value }),
@@ -1079,6 +1418,11 @@ export default function Interactions(): null {
         } catch (error) {
           target.value = previousStatus;
           alert((error as Error).message);
+        } finally {
+          if (!['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(target.value)) {
+            target.disabled = false;
+          }
+          target.removeAttribute('aria-busy');
         }
       });
 
@@ -1086,64 +1430,86 @@ export default function Interactions(): null {
         '[name=appointment-search]',
         '[name=appointment-type]',
         '[name=appointment-status]',
+        '[name=appointment-active]',
       ]) {
         listen(container.querySelector(selector), 'input', () =>
           loadAppointments().catch(() => {}),
         );
       }
-      listen(container.querySelector('[name=patient-search]'), 'input', () =>
-        loadPatients().catch(() => {}),
-      );
-      for (const selector of ['[name=assessment-search]', '[name=assessment-type]']) {
+      for (const selector of ['[name=patient-search]', '[name=patient-active]']) {
+        listen(container.querySelector(selector), 'input', () =>
+          loadPatients().catch(() => {}),
+        );
+      }
+      for (const selector of [
+        '[name=assessment-search]',
+        '[name=assessment-type]',
+        '[name=assessment-active]',
+      ]) {
         listen(container.querySelector(selector), 'input', () =>
           loadAssessments().catch(() => {}),
         );
       }
-      listen(container.querySelector('.export-appointments'), 'click', () =>
+      listen(container.querySelector('.export-appointments'), 'click', async (event) => {
+        const button = event.currentTarget as HTMLButtonElement;
+        await withButtonLoading(button, 'Exporting', async () => {
+        const q = new URLSearchParams({
+          page: '1',
+          pageSize: '100',
+          search: (container.querySelector('[name=appointment-search]') as HTMLInputElement)?.value || '',
+          type: (container.querySelector('[name=appointment-type]') as HTMLSelectElement)?.value || '',
+          status: (container.querySelector('[name=appointment-status]') as HTMLSelectElement)?.value || '',
+          active: (container.querySelector('[name=appointment-active]') as HTMLSelectElement)?.value || '',
+        });
+        const result = await api('/api/practitioner/appointments?' + q);
         download(
           'appointments.csv',
-          csv(
-            adminState.appointments.map((x) => ({
-              patient: x.patient_name,
-              phone: x.patient_phone,
-              type: x.consultation_type,
-              date: x.preferred_date,
-              time: x.preferred_time,
-              status: x.status,
-            })),
-            ['patient', 'phone', 'type', 'date', 'time', 'status'],
-          ),
+          csv((result.data || []).map(appointmentCsvRow), appointmentCsvKeys),
           'text/csv',
-        ),
-      );
-      listen(container.querySelector('.export-patients'), 'click', () =>
+        );
+        });
+      });
+      listen(container.querySelector('.export-patients'), 'click', async (event) => {
+        const button = event.currentTarget as HTMLButtonElement;
+        await withButtonLoading(button, 'Exporting', async () => {
+        const q = new URLSearchParams({
+          page: '1',
+          pageSize: '100',
+          search: (container.querySelector('[name=patient-search]') as HTMLInputElement)?.value || '',
+          active: (container.querySelector('[name=patient-active]') as HTMLSelectElement)?.value || '',
+        });
+        const result = await api('/api/practitioner/patients?' + q);
         download(
           'patients.csv',
-          csv(adminState.patients, ['full_name', 'phone', 'age', 'email', 'address']),
+          csv((result.data || []).map(patientCsvRow), patientCsvKeys),
           'text/csv',
-        ),
-      );
-      listen(container.querySelector('.export-assessments'), 'click', () =>
+        );
+        });
+      });
+      listen(container.querySelector('.export-assessments'), 'click', async (event) => {
+        const button = event.currentTarget as HTMLButtonElement;
+        await withButtonLoading(button, 'Exporting', async () => {
+        const q = new URLSearchParams({
+          page: '1',
+          pageSize: '100',
+          search: (container.querySelector('[name=assessment-search]') as HTMLInputElement)?.value || '',
+          type: (container.querySelector('[name=assessment-type]') as HTMLSelectElement)?.value || '',
+          active: (container.querySelector('[name=assessment-active]') as HTMLSelectElement)?.value || '',
+        });
+        const result = await api('/api/practitioner/assessments?' + q);
         download(
           'parq-forms.csv',
-          csv(
-            adminState.assessments.map((x) => ({
-              patient: x.patients?.full_name,
-              phone: x.patients?.phone,
-              type: x.consultation_type,
-              main_problem: x.main_problem,
-              created_at: x.created_at,
-            })),
-            ['patient', 'phone', 'type', 'main_problem', 'created_at'],
-          ),
+          csv((result.data || []).map(assessmentCsvRow), assessmentCsvKeys),
           'text/csv',
-        ),
-      );
+        );
+        });
+      });
 
       const printButton = container.querySelector(
         '.print-button',
       ) as HTMLButtonElement | null;
-      listen(printButton, 'click', () => {
+      listen(printButton, 'click', async () => {
+        await withButtonLoading(printButton, 'Preparing', async () => {
         const patientInput = form.elements.namedItem(
           'patient',
         ) as HTMLInputElement;
@@ -1177,19 +1543,22 @@ export default function Interactions(): null {
           printWindow.print();
           printWindow.close();
         }, 250);
+        });
       });
 
       const signoutButton = container.querySelector(
         '.signout',
       ) as HTMLButtonElement | null;
       listen(signoutButton, 'click', async () => {
-        await fetch('/api/practitioner/logout', {
-          method: 'POST',
-          headers: {
-            'X-CSRF-Token': csrf,
-          },
+        await withButtonLoading(signoutButton, 'Signing out', async () => {
+          await fetch('/api/practitioner/logout', {
+            method: 'POST',
+            headers: {
+              'X-CSRF-Token': csrf,
+            },
+          });
+          location.reload();
         });
-        location.reload();
       });
 
       render();

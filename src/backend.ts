@@ -8,6 +8,7 @@ import {
   getAssessment,
   getPatient,
   insertAppointment,
+  updateAppointmentDetails,
   updateAppointmentStatus,
   updateAppointmentWhatsApp,
   getAppointmentByIdempotencyKey,
@@ -472,6 +473,13 @@ async function verifySelectedPatient(
       error: 'Selected patient was not found. Please choose a patient again.',
     };
   }
+  if ((selected.data as any).is_active === false) {
+    return {
+      ok: false,
+      status: 409,
+      error: 'Selected patient is inactive. Please choose an active patient.',
+    };
+  }
 
   const selectedPhone = normalizePhone(String((selected.data as any).phone || ''));
   const formPhone = normalizePhone(patientInput.phone);
@@ -654,6 +662,7 @@ export function createApi(
             status: clean(url.searchParams.get('status')),
             from: clean(url.searchParams.get('from')),
             to: clean(url.searchParams.get('to')),
+            active: clean(url.searchParams.get('active')),
           };
 
           if (path === '/api/practitioner/patients' && req.method === 'GET') {
@@ -752,18 +761,43 @@ export function createApi(
               }
               const input = await readJson(req);
               const status = clean(input.status);
-              if (
-                ![
-                  'PENDING',
-                  'CONFIRMED',
-                  'COMPLETED',
-                  'CANCELLED',
-                  'NO_SHOW',
-                ].includes(status)
-              ) {
-                return json(400, { error: 'Please choose a valid status.' });
+              const type = clean(input.type);
+              const date = clean(input.date);
+              const time = clean(input.time);
+
+              if (status) {
+                if (
+                  ![
+                    'PENDING',
+                    'CONFIRMED',
+                    'COMPLETED',
+                    'CANCELLED',
+                    'NO_SHOW',
+                  ].includes(status)
+                ) {
+                  return json(400, { error: 'Please choose a valid status.' });
+                }
+                const result = await updateAppointmentStatus(id, status as any);
+                if (result.error) {
+                  return json(500, { error: result.error });
+                }
+                return json(200, { ok: true });
               }
-              const result = await updateAppointmentStatus(id, status as any);
+
+              if (!['home', 'online'].includes(type)) {
+                return json(400, { error: 'Please choose appointment type.' });
+              }
+              if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                return json(400, { error: 'Please enter appointment date.' });
+              }
+              if (time.length < 3 || time.length > 30) {
+                return json(400, { error: 'Please enter preferred time.' });
+              }
+              const result = await updateAppointmentDetails(id, {
+                consultation_type: type as 'home' | 'online',
+                preferred_date: date,
+                preferred_time: time,
+              });
               if (result.error) {
                 return json(500, { error: result.error });
               }
@@ -811,8 +845,9 @@ export function createApi(
               patient_id: validated.data.patient_id,
               patient: validated.data.patient,
             };
+            const { patient: _patient, ...assessmentData } = validated.data;
             const result = await createAssessment({
-              ...validated.data,
+              ...assessmentData,
               form_data: formData,
             });
             if (result.error) {
@@ -860,8 +895,9 @@ export function createApi(
                 });
               }
 
+              const { patient: _patient, ...assessmentData } = validated.data;
               const result = await updateAssessment(id, {
-                ...validated.data,
+                ...assessmentData,
                 form_data: {
                   ...input,
                   patient_id: validated.data.patient_id,
