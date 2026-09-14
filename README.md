@@ -26,11 +26,11 @@ Open http://127.0.0.1:3000. `npm run dev` starts the development server with hot
 - `app/robots.txt/route.js`, `app/sitemap.xml/route.js`: search engine controls.
 - `public/assets/eduro-logo.png`: supplied client logo, unmodified.
 
-The former Snake starter has been replaced. The site contains Home, Services, About, Why Eudora, Online Physiotherapy, Areas, FAQ, Patient Voices, Contact, Feedback, Privacy, Terms and Practitioner pages.
+The former Snake starter has been replaced. The site contains Home, Services, About, Why Eudora, Online Physiotherapy, Areas, FAQ, Contact, Feedback, Privacy, Terms and Practitioner pages.
 
 ## Current preview versus launch
 
-The visual site and workflows are implemented. The preview is intentionally unindexed and does not report a successful consultation request until a configured notification endpoint accepts it. WhatsApp links are functional; the form can prepare a message for the visitor to review and send. Preparing a message does not send it.
+The visual site and workflows are implemented. The preview is intentionally unindexed. Booking requests are stored in Supabase and Twilio can send a WhatsApp acknowledgement when configured. WhatsApp click-to-chat links are still functional.
 
 Before enabling public submissions:
 
@@ -38,7 +38,7 @@ Before enabling public submissions:
 2. Replace the marked draft Privacy and Terms pages with client-approved policies. Identify notification providers, handling of patient information and retention arrangements.
 3. Finalise feedback questions and the practitioner’s exercise-list requirements.
 4. Supply the approved practitioner portrait and optional genuine patient stories. No fabricated portrait, review or patient statistics are used.
-5. Configure the notification delivery endpoint, practitioner access key, production origin and HTTPS hosting.
+5. Configure Supabase, Twilio WhatsApp, practitioner access key, production origin and HTTPS hosting.
 6. Connect approved analytics and the verified Google Business Profile. Neither is fabricated or linked to an unknown account.
 
 ## Configuration
@@ -49,38 +49,21 @@ Copy `.env.example` to `.env` and supply values. Never commit `.env`.
 - `TRUST_PROXY=true`: use client IPs from `X-Forwarded-For` only when the hosting proxy overwrites that header. Otherwise rate limiting uses a shared bucket.
 - `SITE_URL`: final HTTPS origin. Produces canonical URLs, Open Graph URLs and a sitemap. The domain is not inferred from the email address.
 - `PUBLIC_INDEXING=true`: enable indexing only after approved content is live. Practitioner, feedback and draft legal pages remain noindex in this version.
-- `BOOKING_ENABLED=true`: opt in to actual booking/feedback delivery once approved policies and the provider are ready.
-- `NOTIFICATION_WEBHOOK_URL`: HTTPS endpoint for the selected notification integration. No paid provider or account has been created.
-- `NOTIFICATION_WEBHOOK_TOKEN`: optional bearer credential for that endpoint.
+- `BOOKING_ENABLED=true`: opt in to actual booking/feedback delivery once approved policies and provider settings are ready.
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL.
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key. Keep server-side only.
+- `TWILIO_ACCOUNT_SID`: Twilio account SID.
+- `TWILIO_AUTH_TOKEN`: Twilio auth token. Keep secret.
+- `TWILIO_WHATSAPP_FROM`: Twilio WhatsApp sender, for example `whatsapp:+14155238886` for sandbox.
 - `PRACTITIONER_KEY`: at least 24 characters. Use a strong unique secret shared only with the practitioner. Access is disabled until configured. HTTPS production uses Secure, HttpOnly, SameSite=Strict session cookies.
 
-## Notification integration contract
+## Notification integration
 
-The backend sends JSON to the configured endpoint:
+The backend stores consultation requests in Supabase, then attempts to send a Twilio WhatsApp acknowledgement to the submitted contact number. The acknowledgement is **not appointment confirmation**; the site copy still tells patients that the appointment will be confirmed personally.
 
-```json
-{
-  "event": "consultation.requested",
-  "id": "a-client-generated-idempotency-key",
-  "receivedAt": "an-ISO-timestamp",
-  "data": {
-    "name": "Example person",
-    "age": 30,
-    "phone": "+919999999999",
-    "location": "Example locality",
-    "type": "home",
-    "date": "2026-10-01",
-    "time": "10:00 AM–1:00 PM",
-    "consent": true
-  }
-}
-```
+Delivery status is written back to the existing `whatsapp_*` columns in Supabase for compatibility with the current migration. Failed delivery does not expose secrets or raw provider responses to the visitor.
 
-Feedback uses `feedback.received` with `rating`, `message` and `consent`.
-
-The provider must durably accept the request before returning 2xx, deduplicate using the `Idempotency-Key` header / event ID, notify the practitioner, and send the patient an acknowledgement through the configured messaging channel. Patient acknowledgement is **not appointment confirmation**. The website also displays an on-screen acknowledgement after successful acceptance.
-
-The integration receives personal booking data and private feedback. Account costs, processing location and retention depend on the selected provider and need to be agreed before launch. No raw patient data or credentials are logged by the app. This implementation does not store booking records in a database. Failed or ambiguous delivery returns an error and offers direct contact; retries reuse the event ID. In-memory deduplication lasts 24 hours and resets on restart, so provider-side deduplication is required in production.
+The integration sends personal booking details to Supabase and Twilio. Account costs, processing location, retention and compliance choices depend on those providers and need to be agreed before launch.
 
 ## Practitioner workflow
 

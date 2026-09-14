@@ -1486,10 +1486,12 @@ input[type="checkbox"] {
   margin-top: 22px;
   background: var(--wash);
   font-size: 13px;
+  scroll-margin-top: 120px;
 }
 .form-status.error {
   background: #f0e8df;
   color: #754128;
+  border-left: 3px solid #9b3f24;
 }
 .request-fallback {
   padding-top: 18px;
@@ -1543,6 +1545,250 @@ input[type="checkbox"] {
 .workspace-tabs button[aria-selected="true"] {
   background: var(--wash);
   border-bottom: 2px solid var(--ink);
+}
+.admin-panel {
+  animation: arrive .45s ease both;
+}
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 22px;
+  padding: 18px;
+  background: var(--wash);
+  border: 1px solid var(--line);
+}
+.admin-toolbar input,
+.admin-toolbar select {
+  min-width: 180px;
+  flex: 1 1 190px;
+  margin: 0;
+  background: rgba(255, 255, 255, .72);
+}
+.admin-toolbar .button-light {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.admin-table {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .82);
+  box-shadow: 0 18px 42px rgba(33, 77, 72, .05);
+}
+.admin-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+.admin-table th,
+.admin-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+  font-size: 13px;
+}
+.admin-table th {
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.admin-table td:last-child {
+  white-space: nowrap;
+  width: 210px;
+}
+.admin-table tbody tr {
+  transition: background .2s ease;
+}
+.admin-table tbody tr:hover {
+  background: #f2f6ef;
+}
+.admin-table strong {
+  font-weight: 600;
+}
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.status-select {
+  min-height: 42px;
+  max-width: 190px;
+  margin: 0;
+  padding: 9px 38px 9px 12px;
+  border-color: #aebcad;
+  background-color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+.status-select[data-status="PENDING"] {
+  color: #855f17;
+  background-color: #fff8e8;
+  border-color: #d8bb73;
+}
+.status-select[data-status="CONFIRMED"] {
+  color: var(--ink);
+  background-color: #eef6f1;
+  border-color: #8db19e;
+}
+.status-select[data-status="COMPLETED"] {
+  color: #246044;
+  background-color: #e8f4eb;
+  border-color: #7eaa8c;
+}
+.status-select[data-status="CANCELLED"],
+.status-select[data-status="NO_SHOW"] {
+  color: #8a3d2d;
+  background-color: #f8ebe6;
+  border-color: #d19b8c;
+}
+.status-select:disabled {
+  cursor: not-allowed;
+  opacity: .82;
+}
+.admin-table button,
+.admin-pager button {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  padding: 8px 10px;
+  margin: 0 4px 4px 0;
+  font-size: 11px;
+  cursor: pointer;
+}
+.admin-table button:hover,
+.admin-pager button:hover:not(:disabled) {
+  background: var(--ink);
+  color: white;
+}
+.admin-pager {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.admin-pager button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+.assessment-form {
+  margin-top: 28px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  background: #fff;
+  box-shadow: 0 24px 50px rgba(33, 77, 72, .08);
+  scroll-margin-top: 125px;
+}
+.compact-form {
+  max-width: 980px;
+}
+.assessment-form h3 {
+  margin: 26px 0 18px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-size: 28px;
+}
+.assessment-form h3:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.assessment-form label {
+  display: block;
+  color: var(--ink);
+  font-size: 12px;
+}
+.assessment-form .form-grid {
+  gap: 18px 22px;
+}
+.assessment-form input:not([type="checkbox"]):not([type="radio"]),
+.assessment-form select,
+.assessment-form textarea {
+  margin-top: 7px;
+  background: #fff;
+}
+.assessment-form input:invalid:not(:placeholder-shown),
+.assessment-form select:invalid,
+.assessment-form textarea:invalid:not(:placeholder-shown) {
+  border-color: #a6533f;
+}
+.required {
+  color: #a6533f;
+  font-weight: 700;
+}
+.assessment-form fieldset {
+  margin: 16px 0 20px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  scroll-margin-top: 125px;
+}
+.assessment-form legend {
+  padding-right: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.checkbox-grid,
+.parq-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+.checkbox-grid label,
+.parq-grid label,
+.assessment-form .consent {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  line-height: 1.5;
+}
+.checkbox-grid label {
+  padding: 10px 11px;
+  background: var(--soft);
+  border: 1px solid transparent;
+}
+.checkbox-grid label:has(input:checked) {
+  background: #fff;
+  border-color: var(--sage);
+}
+.parq-grid {
+  grid-template-columns: 1fr;
+}
+.parq-grid fieldset {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+  margin: 0;
+}
+.parq-grid legend {
+  float: left;
+  padding: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.parq-grid legend + label {
+  clear: none;
 }
 .tool-grid {
   display: grid;
@@ -2249,6 +2495,28 @@ input[type="checkbox"] {
   .workspace-tabs button {
     padding: 12px;
     font-size: 12px;
+  }
+  .admin-toolbar {
+    padding: 14px;
+  }
+  .admin-toolbar input,
+  .admin-toolbar select,
+  .admin-toolbar .button-light {
+    flex-basis: 100%;
+    width: 100%;
+  }
+  .assessment-form {
+    padding: 20px;
+  }
+  .assessment-form h3 {
+    font-size: 24px;
+  }
+  .checkbox-grid {
+    grid-template-columns: 1fr;
+  }
+  .parq-grid fieldset {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
   .chart-preview {
     padding: 25px;
