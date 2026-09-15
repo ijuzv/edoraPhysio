@@ -1,21 +1,27 @@
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { workspaceHtml } from './workspace';
 import {
+  createAssessment,
+  createPatient,
+  deleteAssessment,
+  deletePatient,
+  getAssessment,
+  getPatient,
   insertAppointment,
+  updateAppointmentDetails,
+  updateAppointmentStatus,
   updateAppointmentWhatsApp,
   getAppointmentByIdempotencyKey,
   insertFeedback,
-  updateFeedbackWhatsApp,
   getFeedbackByIdempotencyKey,
+  listAppointments,
+  listAssessments,
+  listPatients,
+  updateAssessment,
+  updatePatient,
+  normalizePhone,
 } from './supabase';
-import {
-  sendAppointmentConfirmation,
-  sendFeedbackAcknowledgment,
-} from './whatsapp';
-import {
-  receiveWhatsAppWebhook,
-  verifyWhatsAppWebhook,
-} from './whatsappWebhook';
+import { sendAppointmentConfirmation } from './twilio';
 
 type ValidationError = { error: string };
 type ValidationSuccess<T> = { data: T };
@@ -95,6 +101,16 @@ const xml = (value: string): string => {
     "'": '&apos;',
   };
   return value.replace(/[&<>"']/g, (c) => escapeMap[c] || c);
+};
+
+const logBooking = (
+  step: string,
+  details: Record<string, unknown> = {},
+): void => {
+  console.error('[booking]', {
+    step,
+    ...details,
+  });
 };
 
 export function validateBooking(
@@ -192,6 +208,222 @@ function validateFeedback(
   return { data: { rating, message, consent: true } };
 }
 
+const optional = (value: unknown): string | null => {
+  const text = clean(value);
+  return text || null;
+};
+
+const stringList = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.map((x) => clean(x)).filter(Boolean).slice(0, 40);
+};
+
+function validateAssessment(input: Record<string, unknown>): ValidationResult<any> {
+  const patient = (input.patient || {}) as Record<string, unknown>;
+  const parq = (input.parq_answers || {}) as Record<string, string>;
+  const patientId = clean(input.patient_id);
+
+  const fullName = clean(patient.full_name);
+  const phone = clean(patient.phone);
+  const age = patient.age === '' || patient.age == null ? null : Number(patient.age);
+  const gender = clean(patient.gender);
+  const dateOfBirth = clean(patient.date_of_birth);
+  const address = clean(patient.address);
+  const emergencyName = clean(patient.emergency_contact_name);
+  const emergencyPhone = clean(patient.emergency_contact_phone);
+  const painSeverity =
+    input.pain_severity === '' || input.pain_severity == null
+      ? null
+      : Number(input.pain_severity);
+
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      patientId,
+    )
+  ) {
+    return { error: 'Please select the patient this PAR-Q belongs to.' };
+  }
+
+  if (fullName.length < 2 || fullName.length > 120) {
+    return { error: 'Please enter the patient full name.' };
+  }
+
+  if (age === null || !Number.isInteger(age) || age < 1 || age > 120) {
+    return { error: 'Please enter a valid patient age.' };
+  }
+
+  const digits = phone.replace(/\D/g, '');
+  if (!/^\+?[\d\s()-]{8,20}$/.test(phone) || digits.length < 8) {
+    return { error: 'Please enter a valid patient mobile number.' };
+  }
+  const emergencyDigits = emergencyPhone.replace(/\D/g, '');
+  if (!gender) {
+    return { error: 'Please select patient gender.' };
+  }
+  if (!dateOfBirth) {
+    return { error: 'Please enter patient date of birth.' };
+  }
+  if (address.length < 5) {
+    return { error: 'Please enter the full residential address.' };
+  }
+  if (emergencyName.length < 2) {
+    return { error: 'Please enter emergency contact full name.' };
+  }
+  if (emergencyDigits.length < 8) {
+    return { error: 'Please enter a valid emergency contact phone number.' };
+  }
+
+  for (const [field, label] of [
+    ['consultation_type', 'consultation type'],
+    ['preferred_day_time', 'preferred day and time'],
+    ['main_problem', 'main problem'],
+    ['duration_of_complaint', 'duration of complaint'],
+    ['symptom_region', 'region/location of symptoms'],
+    ['symptom_side', 'side'],
+    ['movement_range', 'range'],
+    ['pain_presentation', 'pain presentation'],
+    ['complaint_onset', 'onset'],
+    ['aggravating_activities', 'activities that aggravate symptoms'],
+    ['relieving_factors', 'factors that relieve symptoms'],
+    ['surgery_status', 'surgery/procedure history'],
+    ['current_medications', 'current medications'],
+    ['electronic_signature', 'electronic signature'],
+  ]) {
+    const value = clean(input[field]);
+    if (value.length < 1 || value.length > 5000) {
+      return { error: `Please enter ${label}.` };
+    }
+  }
+
+  if (
+    painSeverity === null ||
+    !Number.isInteger(painSeverity) ||
+    painSeverity < 0 ||
+    painSeverity > 10
+  ) {
+    return { error: 'Pain severity must be between 0 and 10.' };
+  }
+  const medicalConditions = stringList(input.medical_conditions);
+  const investigations = stringList(input.investigations);
+  if (medicalConditions.length === 0) {
+    return { error: 'Please select at least one medical condition option.' };
+  }
+  if (
+    medicalConditions.includes('Any other medical condition') &&
+    !clean(input.other_medical_condition)
+  ) {
+    return { error: 'Please specify the other medical condition.' };
+  }
+  if (investigations.length === 0) {
+    return { error: 'Please select at least one investigation option.' };
+  }
+  if (
+    clean(input.surgery_status) !== 'No' &&
+    clean(input.surgery_details).length < 1
+  ) {
+    return { error: 'Please enter surgery/procedure details.' };
+  }
+
+  if (input.consent_confirmed !== true) {
+    return { error: 'Please confirm patient declaration and consent.' };
+  }
+
+  const requiredParq = [
+    'heart_condition',
+    'chest_pain_activity',
+    'chest_pain_rest',
+    'dizziness',
+    'bone_joint_problem',
+    'blood_pressure_meds',
+    'other_reason',
+  ];
+  for (const key of requiredParq) {
+    if (!['yes', 'no'].includes(clean(parq[key]).toLowerCase())) {
+      return { error: 'Please answer every PAR-Q question.' };
+    }
+  }
+
+  const patientData = {
+    full_name: fullName,
+    age,
+    gender,
+    date_of_birth: dateOfBirth,
+    phone,
+    email: optional(patient.email),
+    address,
+    emergency_contact_name: emergencyName,
+    emergency_contact_phone: emergencyPhone,
+  };
+
+  return {
+    data: {
+      patient_id: patientId,
+      patient: patientData,
+      appointment_id: optional(input.appointment_id),
+      consultation_type: optional(input.consultation_type),
+      preferred_day_time: optional(input.preferred_day_time),
+      referral_source: optional(input.referral_source),
+      main_problem: clean(input.main_problem),
+      duration_of_complaint: clean(input.duration_of_complaint),
+      symptom_region: clean(input.symptom_region),
+      symptom_side: optional(input.symptom_side),
+      movement_range: optional(input.movement_range),
+      pain_presentation: optional(input.pain_presentation),
+      complaint_onset: optional(input.complaint_onset),
+      pain_severity: painSeverity,
+      aggravating_activities: clean(input.aggravating_activities),
+      relieving_factors: clean(input.relieving_factors),
+      medical_conditions: medicalConditions,
+      other_medical_condition: optional(input.other_medical_condition),
+      surgery_status: optional(input.surgery_status),
+      surgery_details: optional(input.surgery_details),
+      current_medications: optional(input.current_medications),
+      investigations,
+      parq_answers: requiredParq.reduce<Record<string, string>>((acc, key) => {
+        acc[key] = clean(parq[key]).toLowerCase();
+        return acc;
+      }, {}),
+      parq_details: optional(input.parq_details),
+      consent_confirmed: true,
+      electronic_signature: clean(input.electronic_signature),
+    },
+  };
+}
+
+function validatePatient(input: Record<string, unknown>): ValidationResult<any> {
+  const fullName = clean(input.full_name);
+  const phone = clean(input.phone);
+  const age = input.age === '' || input.age == null ? null : Number(input.age);
+
+  if (fullName.length < 2 || fullName.length > 120) {
+    return { error: 'Please enter the patient full name.' };
+  }
+  if (age !== null && (!Number.isInteger(age) || age < 1 || age > 120)) {
+    return { error: 'Please enter a valid patient age.' };
+  }
+
+  const digits = phone.replace(/\D/g, '');
+  if (!/^\+?[\d\s()-]{8,20}$/.test(phone) || digits.length < 8) {
+    return { error: 'Please enter a valid patient mobile number.' };
+  }
+
+  return {
+    data: {
+      full_name: fullName,
+      age,
+      gender: optional(input.gender),
+      date_of_birth: optional(input.date_of_birth),
+      phone,
+      email: optional(input.email),
+      address: optional(input.address),
+      emergency_contact_name: optional(input.emergency_contact_name),
+      emergency_contact_phone: optional(input.emergency_contact_phone),
+    },
+  };
+}
+
 async function readJson(req: Request): Promise<Record<string, unknown>> {
   if (!req.headers.get('content-type')?.startsWith('application/json')) {
     throw {
@@ -237,6 +469,40 @@ async function readJson(req: Request): Promise<Record<string, unknown>> {
       message: 'Please check the request and try again.',
     };
   }
+}
+
+async function verifySelectedPatient(
+  patientId: string,
+  patientInput: { phone: string },
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const selected = await getPatient(patientId);
+  if (selected.error || !selected.data) {
+    return {
+      ok: false,
+      status: 404,
+      error: 'Selected patient was not found. Please choose a patient again.',
+    };
+  }
+  if ((selected.data as any).is_active === false) {
+    return {
+      ok: false,
+      status: 409,
+      error: 'Selected patient is inactive. Please choose an active patient.',
+    };
+  }
+
+  const selectedPhone = normalizePhone(String((selected.data as any).phone || ''));
+  const formPhone = normalizePhone(patientInput.phone);
+  if (selectedPhone !== formPhone) {
+    return {
+      ok: false,
+      status: 409,
+      error:
+        'The selected patient and mobile number do not match. Please choose the correct patient or update the patient details first.',
+    };
+  }
+
+  return { ok: true };
 }
 
 export function createApi(
@@ -333,30 +599,18 @@ export function createApi(
       const path = new URL(req.url).pathname.replace(/\/$/, '');
 
       if (path.startsWith('/api/')) {
-        if (
-          path === '/api/whatsapp' ||
-          path === '/api/whatsapp/webhook'
-        ) {
-          if (req.method === 'GET') {
-            return verifyWhatsAppWebhook(req);
-          }
-
-          if (req.method === 'POST') {
-            return receiveWhatsAppWebhook(req);
-          }
-        }
-
         const origin = req.headers.get('origin');
         const localOrigin =
           new URL(req.url).protocol +
           '//' +
           (req.headers.get('host') || new URL(req.url).host);
 
-        if (
-          req.method !== 'GET' &&
-          origin &&
-          origin !== (siteUrl || localOrigin)
-        ) {
+        const allowedOrigins = new Set([localOrigin]);
+        if (siteUrl) {
+          allowedOrigins.add(siteUrl);
+        }
+
+        if (req.method !== 'GET' && origin && !allowedOrigins.has(origin)) {
           return json(403, { error: 'This request is not allowed.' });
         }
 
@@ -409,6 +663,276 @@ export function createApi(
             return json(200, { html: workspaceHtml, csrf: s.csrf });
           }
 
+          const url = new URL(req.url);
+          const listOptions = {
+            page: Number(url.searchParams.get('page') || 1),
+            pageSize: Number(url.searchParams.get('pageSize') || 10),
+            search: clean(url.searchParams.get('search')),
+            type: clean(url.searchParams.get('type')),
+            status: clean(url.searchParams.get('status')),
+            from: clean(url.searchParams.get('from')),
+            to: clean(url.searchParams.get('to')),
+            active: clean(url.searchParams.get('active')),
+          };
+
+          if (path === '/api/practitioner/patients' && req.method === 'GET') {
+            const result = await listPatients(listOptions);
+            if (result.error) {
+              return json(500, { error: result.error });
+            }
+            return json(200, result as unknown as Record<string, unknown>);
+          }
+
+          if (path === '/api/practitioner/patients' && req.method === 'POST') {
+            if (req.headers.get('x-csrf-token') !== s.csrf) {
+              return json(403, { error: 'Please refresh and try again.' });
+            }
+
+            const input = await readJson(req);
+            const validated = validatePatient(input);
+            if ('error' in validated) {
+              return json(400, { error: validated.error });
+            }
+
+            const result = await createPatient(validated.data);
+            if (result.error) {
+              return json(
+                result.error.includes('already exists') ? 409 : 500,
+                { error: result.error },
+              );
+            }
+            return json(200, { ok: true, id: result.id });
+          }
+
+          if (path.startsWith('/api/practitioner/patients/')) {
+            const id = path.split('/').pop() || '';
+            if (
+              !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                id,
+              )
+            ) {
+              return json(404, { error: 'Not found.' });
+            }
+
+            if (req.method === 'PUT') {
+              if (req.headers.get('x-csrf-token') !== s.csrf) {
+                return json(403, { error: 'Please refresh and try again.' });
+              }
+
+              const input = await readJson(req);
+              const validated = validatePatient(input);
+              if ('error' in validated) {
+                return json(400, { error: validated.error });
+              }
+
+              const result = await updatePatient(id, validated.data);
+              if (result.error) {
+                return json(500, { error: result.error });
+              }
+              return json(200, { ok: true, data: result.data });
+            }
+
+            if (req.method === 'DELETE') {
+              if (req.headers.get('x-csrf-token') !== s.csrf) {
+                return json(403, { error: 'Please refresh and try again.' });
+              }
+
+              const result = await deletePatient(id);
+              if (result.error) {
+                return json(500, { error: result.error });
+              }
+              return json(200, { ok: true });
+            }
+          }
+
+          if (
+            path === '/api/practitioner/appointments' &&
+            req.method === 'GET'
+          ) {
+            const result = await listAppointments(listOptions);
+            if (result.error) {
+              return json(500, { error: result.error });
+            }
+            return json(200, result as unknown as Record<string, unknown>);
+          }
+
+          if (path.startsWith('/api/practitioner/appointments/')) {
+            const id = path.split('/').pop() || '';
+            if (
+              !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                id,
+              )
+            ) {
+              return json(404, { error: 'Not found.' });
+            }
+            if (req.method === 'PUT') {
+              if (req.headers.get('x-csrf-token') !== s.csrf) {
+                return json(403, { error: 'Please refresh and try again.' });
+              }
+              const input = await readJson(req);
+              const status = clean(input.status);
+              const type = clean(input.type);
+              const date = clean(input.date);
+              const time = clean(input.time);
+
+              if (status) {
+                if (
+                  ![
+                    'PENDING',
+                    'CONFIRMED',
+                    'COMPLETED',
+                    'CANCELLED',
+                    'NO_SHOW',
+                  ].includes(status)
+                ) {
+                  return json(400, { error: 'Please choose a valid status.' });
+                }
+                const result = await updateAppointmentStatus(id, status as any);
+                if (result.error) {
+                  return json(500, { error: result.error });
+                }
+                return json(200, { ok: true });
+              }
+
+              if (!['home', 'online'].includes(type)) {
+                return json(400, { error: 'Please choose appointment type.' });
+              }
+              if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                return json(400, { error: 'Please enter appointment date.' });
+              }
+              if (time.length < 3 || time.length > 30) {
+                return json(400, { error: 'Please enter preferred time.' });
+              }
+              const result = await updateAppointmentDetails(id, {
+                consultation_type: type as 'home' | 'online',
+                preferred_date: date,
+                preferred_time: time,
+              });
+              if (result.error) {
+                return json(500, { error: result.error });
+              }
+              return json(200, { ok: true });
+            }
+          }
+
+          if (
+            path === '/api/practitioner/assessments' &&
+            req.method === 'GET'
+          ) {
+            const result = await listAssessments(listOptions);
+            if (result.error) {
+              return json(500, { error: result.error });
+            }
+            return json(200, result as unknown as Record<string, unknown>);
+          }
+
+          if (
+            path === '/api/practitioner/assessments' &&
+            req.method === 'POST'
+          ) {
+            if (req.headers.get('x-csrf-token') !== s.csrf) {
+              return json(403, { error: 'Please refresh and try again.' });
+            }
+
+            const input = await readJson(req);
+            const validated = validateAssessment(input);
+            if ('error' in validated) {
+              return json(400, { error: validated.error });
+            }
+
+            const selectedPatient = await verifySelectedPatient(
+              validated.data.patient_id,
+              validated.data.patient,
+            );
+            if (!selectedPatient.ok) {
+              return json(selectedPatient.status, {
+                error: selectedPatient.error,
+              });
+            }
+
+            const formData = {
+              ...input,
+              patient_id: validated.data.patient_id,
+              patient: validated.data.patient,
+            };
+            const { patient: _patient, ...assessmentData } = validated.data;
+            const result = await createAssessment({
+              ...assessmentData,
+              form_data: formData,
+            });
+            if (result.error) {
+              return json(500, { error: result.error });
+            }
+            return json(200, { ok: true, data: result.data });
+          }
+
+          if (path.startsWith('/api/practitioner/assessments/')) {
+            const id = path.split('/').pop() || '';
+            if (
+              !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                id,
+              )
+            ) {
+              return json(404, { error: 'Not found.' });
+            }
+
+            if (req.method === 'GET') {
+              const result = await getAssessment(id);
+              if (result.error) {
+                return json(404, { error: 'Assessment not found.' });
+              }
+              return json(200, { data: result.data });
+            }
+
+            if (req.method === 'PUT') {
+              if (req.headers.get('x-csrf-token') !== s.csrf) {
+                return json(403, { error: 'Please refresh and try again.' });
+              }
+
+              const input = await readJson(req);
+              const validated = validateAssessment(input);
+              if ('error' in validated) {
+                return json(400, { error: validated.error });
+              }
+
+              const selectedPatient = await verifySelectedPatient(
+                validated.data.patient_id,
+                validated.data.patient,
+              );
+              if (!selectedPatient.ok) {
+                return json(selectedPatient.status, {
+                  error: selectedPatient.error,
+                });
+              }
+
+              const { patient: _patient, ...assessmentData } = validated.data;
+              const result = await updateAssessment(id, {
+                ...assessmentData,
+                form_data: {
+                  ...input,
+                  patient_id: validated.data.patient_id,
+                  patient: validated.data.patient,
+                },
+              });
+              if (result.error) {
+                return json(500, { error: result.error });
+              }
+              return json(200, { ok: true, data: result.data });
+            }
+
+            if (req.method === 'DELETE') {
+              if (req.headers.get('x-csrf-token') !== s.csrf) {
+                return json(403, { error: 'Please refresh and try again.' });
+              }
+
+              const result = await deleteAssessment(id);
+              if (result.error) {
+                return json(500, { error: result.error });
+              }
+              return json(200, { ok: true });
+            }
+          }
+
           if (path === '/api/practitioner/logout' && req.method === 'POST') {
             if (req.headers.get('x-csrf-token') !== s.csrf) {
               return json(403, {
@@ -450,13 +974,26 @@ export function createApi(
             // Handle appointment booking
             const validated = validateBooking(input);
             if ('error' in validated) {
+              logBooking('validation_failed', {
+                reason: validated.error,
+              });
               return json(400, { error: validated.error });
             }
             const bookingData = validated.data;
+            logBooking('validation_ok', {
+              requestId: key,
+              type: bookingData.type,
+              date: bookingData.date,
+              time: bookingData.time,
+            });
 
             // Check if already processed
             const existing = await getAppointmentByIdempotencyKey(key);
             if (existing.id) {
+              logBooking('duplicate_request', {
+                requestId: key,
+                appointmentId: existing.id,
+              });
               return json(200, {
                 ok: true,
                 requestId: key,
@@ -464,13 +1001,19 @@ export function createApi(
             }
 
             if (existing.error) {
+              logBooking('idempotency_lookup_failed', {
+                requestId: key,
+                error: existing.error,
+              });
               return json(500, {
                 error: 'Database error. Please try again.',
               });
             }
 
-            // Insert into database
+            // Insert the request as an appointment snapshot. The practitioner
+            // maps it to a patient record explicitly after reviewing details.
             const insertResult = await insertAppointment({
+              patient_id: null,
               patient_name: bookingData.name,
               patient_age: bookingData.age,
               patient_phone: bookingData.phone,
@@ -484,12 +1027,20 @@ export function createApi(
             });
 
             if (insertResult.error) {
+              logBooking('appointment_insert_failed', {
+                requestId: key,
+                error: insertResult.error,
+              });
               return json(500, {
                 error: 'Failed to save appointment. Please try again.',
               });
             }
+            logBooking('appointment_inserted', {
+              requestId: key,
+              appointmentId: insertResult.id,
+            });
 
-            // Send WhatsApp confirmation
+            // Send Twilio WhatsApp acknowledgement
             const whatsappResult = await sendAppointmentConfirmation(
               bookingData.name,
               bookingData.phone,
@@ -497,16 +1048,33 @@ export function createApi(
               bookingData.time,
               bookingData.type === 'home' ? 'home' : 'online',
             );
-
-            // Update appointment with WhatsApp status
-            await updateAppointmentWhatsApp(insertResult.id, {
-              whatsapp_sent: whatsappResult.success,
-              whatsapp_sent_at: whatsappResult.success
-                ? new Date().toISOString()
-                : undefined,
-              whatsapp_message_id: whatsappResult.messageId,
-              whatsapp_error: whatsappResult.error,
+            logBooking('twilio_ack_result', {
+              requestId: key,
+              appointmentId: insertResult.id,
+              success: whatsappResult.success,
+              messageId: whatsappResult.messageId,
+              error: whatsappResult.error,
             });
+
+            // Keep the existing database columns while recording Twilio delivery.
+            const notificationUpdate = await updateAppointmentWhatsApp(
+              insertResult.id,
+              {
+                whatsapp_sent: whatsappResult.success,
+                whatsapp_sent_at: whatsappResult.success
+                  ? new Date().toISOString()
+                  : undefined,
+                whatsapp_message_id: whatsappResult.messageId,
+                whatsapp_error: whatsappResult.error,
+              },
+            );
+            if (notificationUpdate.error) {
+              logBooking('notification_status_update_failed', {
+                requestId: key,
+                appointmentId: insertResult.id,
+                error: notificationUpdate.error,
+              });
+            }
 
             return json(200, {
               ok: true,
