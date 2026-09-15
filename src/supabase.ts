@@ -25,6 +25,9 @@ interface AppointmentInsert {
   idempotency_key: string;
 }
 
+type AppointmentInsertPayload = Partial<AppointmentInsert> &
+  Omit<AppointmentInsert, 'patient_id'>;
+
 interface AppointmentDetailsUpdate {
   consultation_type?: 'home' | 'online';
   preferred_date?: string;
@@ -315,14 +318,31 @@ export async function insertAppointment(
 ): Promise<{ id: string; error?: string }> {
   try {
     const supabase = getSupabase();
-    const { data: result, error } = await supabase
+    let payload: AppointmentInsertPayload = data;
+    let { data: result, error } = await supabase
       .from('appointments')
-      .insert([data])
+      .insert([payload])
       .select('id')
       .single();
 
+    if (error?.message.includes("'patient_id' column")) {
+      const { patient_id: _patientId, ...legacyPayload } = data;
+      payload = legacyPayload;
+      const retry = await supabase
+        .from('appointments')
+        .insert([payload])
+        .select('id')
+        .single();
+      result = retry.data;
+      error = retry.error;
+    }
+
     if (error) {
       return { id: '', error: error.message };
+    }
+
+    if (!result?.id) {
+      return { id: '', error: 'Appointment was not saved.' };
     }
 
     return { id: result.id };
