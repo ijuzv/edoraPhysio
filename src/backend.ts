@@ -103,16 +103,6 @@ const xml = (value: string): string => {
   return value.replace(/[&<>"']/g, (c) => escapeMap[c] || c);
 };
 
-const storageSetupError = (message: string | undefined): boolean =>
-  Boolean(
-    message?.includes('Missing Supabase environment variables') ||
-      message?.includes('relation') ||
-      message?.includes('schema cache') ||
-      message?.includes('Invalid API key') ||
-      message?.includes('JWT') ||
-      message?.includes('permission denied'),
-  );
-
 export function validateBooking(
   input: Record<string, unknown>,
 ): ValidationResult<BookingData> {
@@ -988,8 +978,8 @@ export function createApi(
             }
 
             if (existing.error) {
-              console.warn('Booking duplicate-check failed; continuing to save', {
-                error: existing.error,
+              return json(500, {
+                error: 'Database error. Please try again.',
               });
             }
 
@@ -1010,10 +1000,8 @@ export function createApi(
             });
 
             if (insertResult.error) {
-              return json(storageSetupError(insertResult.error) ? 503 : 500, {
-                error: storageSetupError(insertResult.error)
-                  ? 'Booking storage is not configured correctly. Please check the Supabase environment variables and database migrations.'
-                  : 'Failed to save appointment. Please try again.',
+              return json(500, {
+                error: 'Failed to save appointment. Please try again.',
               });
             }
 
@@ -1027,7 +1015,7 @@ export function createApi(
             );
 
             // Keep the existing database columns while recording Twilio delivery.
-            const notificationUpdate = await updateAppointmentWhatsApp(insertResult.id, {
+            await updateAppointmentWhatsApp(insertResult.id, {
               whatsapp_sent: whatsappResult.success,
               whatsapp_sent_at: whatsappResult.success
                 ? new Date().toISOString()
@@ -1035,12 +1023,6 @@ export function createApi(
               whatsapp_message_id: whatsappResult.messageId,
               whatsapp_error: whatsappResult.error,
             });
-            if (notificationUpdate.error) {
-              console.warn('Booking notification status was not saved', {
-                appointmentId: insertResult.id,
-                error: notificationUpdate.error,
-              });
-            }
 
             return json(200, {
               ok: true,
