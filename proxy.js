@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 export function proxy(request) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const csp =
-    "default-src 'self'; script-src 'self' 'nonce-" +
+    "default-src 'self'; script-src 'self' https://vercel.live 'nonce-" +
     nonce +
     "'" +
     (process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : '') +
-    "; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-src https://maps.google.com https://www.google.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
+    "; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vercel.live; frame-src https://maps.google.com https://www.google.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
   const headers = new Headers(request.headers);
   headers.set('Content-Security-Policy', csp);
   const response = NextResponse.next({ request: { headers } });

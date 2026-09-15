@@ -26,7 +26,7 @@ interface AppointmentInsert {
 }
 
 type AppointmentInsertPayload = Partial<AppointmentInsert> &
-  Omit<AppointmentInsert, 'patient_id'>;
+  Omit<AppointmentInsert, 'idempotency_key' | 'patient_id'>;
 
 interface AppointmentDetailsUpdate {
   consultation_type?: 'home' | 'online';
@@ -325,8 +325,15 @@ export async function insertAppointment(
       .select('id')
       .single();
 
-    if (error?.message.includes("'patient_id' column")) {
-      const { patient_id: _patientId, ...legacyPayload } = data;
+    if (
+      error?.message.includes("'patient_id' column") ||
+      error?.message.includes("'idempotency_key' column")
+    ) {
+      const {
+        idempotency_key: _idempotencyKey,
+        patient_id: _patientId,
+        ...legacyPayload
+      } = data;
       payload = legacyPayload;
       const retry = await supabase
         .from('appointments')
