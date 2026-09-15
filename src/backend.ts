@@ -103,6 +103,16 @@ const xml = (value: string): string => {
   return value.replace(/[&<>"']/g, (c) => escapeMap[c] || c);
 };
 
+const logBooking = (
+  step: string,
+  details: Record<string, unknown> = {},
+): void => {
+  console.error('[booking]', {
+    step,
+    ...details,
+  });
+};
+
 export function validateBooking(
   input: Record<string, unknown>,
 ): ValidationResult<BookingData> {
@@ -964,13 +974,26 @@ export function createApi(
             // Handle appointment booking
             const validated = validateBooking(input);
             if ('error' in validated) {
+              logBooking('validation_failed', {
+                reason: validated.error,
+              });
               return json(400, { error: validated.error });
             }
             const bookingData = validated.data;
+            logBooking('validation_ok', {
+              requestId: key,
+              type: bookingData.type,
+              date: bookingData.date,
+              time: bookingData.time,
+            });
 
             // Check if already processed
             const existing = await getAppointmentByIdempotencyKey(key);
             if (existing.id) {
+              logBooking('duplicate_request', {
+                requestId: key,
+                appointmentId: existing.id,
+              });
               return json(200, {
                 ok: true,
                 requestId: key,
@@ -978,6 +1001,10 @@ export function createApi(
             }
 
             if (existing.error) {
+              logBooking('idempotency_lookup_failed', {
+                requestId: key,
+                error: existing.error,
+              });
               return json(500, {
                 error: 'Database error. Please try again.',
               });
@@ -1000,10 +1027,18 @@ export function createApi(
             });
 
             if (insertResult.error) {
+              logBooking('appointment_insert_failed', {
+                requestId: key,
+                error: insertResult.error,
+              });
               return json(500, {
                 error: 'Failed to save appointment. Please try again.',
               });
             }
+            logBooking('appointment_inserted', {
+              requestId: key,
+              appointmentId: insertResult.id,
+            });
 
             // Send Twilio WhatsApp acknowledgement
             const whatsappResult = await sendAppointmentConfirmation(
@@ -1013,16 +1048,33 @@ export function createApi(
               bookingData.time,
               bookingData.type === 'home' ? 'home' : 'online',
             );
+            logBooking('twilio_ack_result', {
+              requestId: key,
+              appointmentId: insertResult.id,
+              success: whatsappResult.success,
+              messageId: whatsappResult.messageId,
+              error: whatsappResult.error,
+            });
 
             // Keep the existing database columns while recording Twilio delivery.
-            await updateAppointmentWhatsApp(insertResult.id, {
-              whatsapp_sent: whatsappResult.success,
-              whatsapp_sent_at: whatsappResult.success
-                ? new Date().toISOString()
-                : undefined,
-              whatsapp_message_id: whatsappResult.messageId,
-              whatsapp_error: whatsappResult.error,
-            });
+            const notificationUpdate = await updateAppointmentWhatsApp(
+              insertResult.id,
+              {
+                whatsapp_sent: whatsappResult.success,
+                whatsapp_sent_at: whatsappResult.success
+                  ? new Date().toISOString()
+                  : undefined,
+                whatsapp_message_id: whatsappResult.messageId,
+                whatsapp_error: whatsappResult.error,
+              },
+            );
+            if (notificationUpdate.error) {
+              logBooking('notification_status_update_failed', {
+                requestId: key,
+                appointmentId: insertResult.id,
+                error: notificationUpdate.error,
+              });
+            }
 
             return json(200, {
               ok: true,
