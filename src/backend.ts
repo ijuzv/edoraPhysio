@@ -17,11 +17,17 @@ import {
   listAppointments,
   listAssessments,
   listPatients,
+  listInvoices,
+  getInvoice,
+  createInvoice,
+  updateInvoice,
+  deleteInvoice,
   updateAssessment,
   updatePatient,
   normalizePhone,
 } from './supabase';
 import { isAppointmentStatus } from './appointment-status';
+import { roundMoney, type InvoiceLineItem } from './invoice';
 import { sendAppointmentConfirmation } from './twilio';
 
 type ValidationError = { error: string };
@@ -421,6 +427,124 @@ function validatePatient(input: Record<string, unknown>): ValidationResult<any> 
       address: optional(input.address),
       emergency_contact_name: optional(input.emergency_contact_name),
       emergency_contact_phone: optional(input.emergency_contact_phone),
+    },
+  };
+}
+
+const isUuid = (value: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+
+const isIsoDate = (value: string): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(value + 'T12:00:00Z');
+  return (
+    Number.isFinite(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === value
+  );
+};
+
+export function validateInvoice(
+  input: Record<string, unknown>,
+): ValidationResult<{
+  patient_id: string | null;
+  invoice_date: string;
+  due_date: string | null;
+  bill_to_name: string;
+  bill_to_phone: string;
+  bill_to_location: string | null;
+  line_items: InvoiceLineItem[];
+  amount_paid: number;
+  notes: string | null;
+}> {
+  const billToName = clean(input.bill_to_name);
+  const phone = clean(input.bill_to_phone);
+  const invoiceDate = clean(input.invoice_date);
+  const dueDate = clean(input.due_date);
+  const patientId = clean(input.patient_id);
+  const location = clean(input.bill_to_location);
+  const notes = clean(input.notes);
+  const amountPaid = roundMoney(Number(input.amount_paid || 0));
+
+  if (billToName.length < 2 || billToName.length > 120) {
+    return { error: 'Please enter the client or patient name.' };
+  }
+
+  const digits = phone.replace(/\D/g, '');
+  if (!/^\+?[\d\s()-]{8,20}$/.test(phone) || digits.length < 8) {
+    return { error: 'Please enter a valid billing phone number.' };
+  }
+
+  if (!isIsoDate(invoiceDate)) {
+    return { error: 'Please enter a valid invoice date.' };
+  }
+  if (dueDate && !isIsoDate(dueDate)) {
+    return { error: 'Please enter a valid due date.' };
+  }
+  if (dueDate && dueDate < invoiceDate) {
+    return { error: 'Due date cannot be earlier than the invoice date.' };
+  }
+  if (patientId && !isUuid(patientId)) {
+    return { error: 'Please choose a valid patient.' };
+  }
+  if (location.length > 200) {
+    return { error: 'Location must be 200 characters or fewer.' };
+  }
+  if (notes.length > 2000) {
+    return { error: 'Notes must be 2,000 characters or fewer.' };
+  }
+  if (!Number.isFinite(amountPaid) || amountPaid < 0 || amountPaid > 1_000_000) {
+    return { error: 'Please enter a valid amount paid.' };
+  }
+
+  if (!Array.isArray(input.line_items) || input.line_items.length === 0) {
+    return { error: 'Please add at least one service line.' };
+  }
+  if (input.line_items.length > 40) {
+    return { error: 'Please keep the invoice to 40 service lines or fewer.' };
+  }
+
+  const line_items: InvoiceLineItem[] = [];
+  for (const [index, raw] of input.line_items.entries()) {
+    const item = (raw || {}) as Record<string, unknown>;
+    const description = clean(item.description);
+    const serviceDate = clean(item.service_date);
+    const qty = Number(item.qty);
+    const rate = roundMoney(Number(item.rate));
+    if (description.length < 1 || description.length > 200) {
+      return {
+        error: `Please enter a service description for line ${index + 1}.`,
+      };
+    }
+    if (serviceDate && !isIsoDate(serviceDate)) {
+      return { error: `Please enter a valid service date for line ${index + 1}.` };
+    }
+    if (!Number.isInteger(qty) || qty < 1 || qty > 999) {
+      return { error: `Quantity on line ${index + 1} must be between 1 and 999.` };
+    }
+    if (!Number.isFinite(rate) || rate < 0 || rate > 1_000_000) {
+      return { error: `Please enter a valid rate for line ${index + 1}.` };
+    }
+    line_items.push({
+      description,
+      service_date: serviceDate,
+      qty,
+      rate,
+    });
+  }
+
+  return {
+    data: {
+      patient_id: patientId || null,
+      invoice_date: invoiceDate,
+      due_date: dueDate || null,
+      bill_to_name: billToName,
+      bill_to_phone: phone,
+      bill_to_location: location || null,
+      line_items,
+      amount_paid: amountPaid,
+      notes: notes || null,
     },
   };
 }
@@ -919,6 +1043,72 @@ export function createApi(
               }
 
               const result = await deleteAssessment(id);
+              if (result.error) {
+                return json(500, { error: result.error });
+              }
+              return json(200, { ok: true });
+            }
+          }
+
+          if (path === '/api/practitioner/invoices' && req.method === 'GET') {
+            const result = await listInvoices(listOptions);
+            if (result.error) {
+              return json(500, { error: result.error });
+            }
+            return json(200, result as unknown as Record<string, unknown>);
+          }
+
+          if (path === '/api/practitioner/invoices' && req.method === 'POST') {
+            if (req.headers.get('x-csrf-token') !== s.csrf) {
+              return json(403, { error: 'Please refresh and try again.' });
+            }
+            const input = await readJson(req);
+            const validated = validateInvoice(input);
+            if ('error' in validated) {
+              return json(400, { error: validated.error });
+            }
+            const result = await createInvoice(validated.data);
+            if (result.error) {
+              return json(500, { error: result.error });
+            }
+            return json(200, { ok: true, id: result.id, data: result.data });
+          }
+
+          if (path.startsWith('/api/practitioner/invoices/')) {
+            const id = path.split('/').pop() || '';
+            if (!isUuid(id)) {
+              return json(404, { error: 'Not found.' });
+            }
+
+            if (req.method === 'GET') {
+              const result = await getInvoice(id);
+              if (result.error || !result.data) {
+                return json(404, { error: 'Invoice not found.' });
+              }
+              return json(200, { data: result.data });
+            }
+
+            if (req.method === 'PUT') {
+              if (req.headers.get('x-csrf-token') !== s.csrf) {
+                return json(403, { error: 'Please refresh and try again.' });
+              }
+              const input = await readJson(req);
+              const validated = validateInvoice(input);
+              if ('error' in validated) {
+                return json(400, { error: validated.error });
+              }
+              const result = await updateInvoice(id, validated.data);
+              if (result.error) {
+                return json(500, { error: result.error });
+              }
+              return json(200, { ok: true, data: result.data });
+            }
+
+            if (req.method === 'DELETE') {
+              if (req.headers.get('x-csrf-token') !== s.csrf) {
+                return json(403, { error: 'Please refresh and try again.' });
+              }
+              const result = await deleteInvoice(id);
               if (result.error) {
                 return json(500, { error: result.error });
               }

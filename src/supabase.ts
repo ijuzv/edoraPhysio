@@ -6,6 +6,7 @@ import {
   isAppointmentStatus,
   isFinalAppointmentStatus,
 } from './appointment-status';
+import { invoiceTotals } from './invoice';
 
 export {
   type AppointmentStatus,
@@ -89,6 +90,25 @@ export interface AssessmentInput {
   consent_confirmed: boolean;
   electronic_signature: string;
   form_data: Record<string, unknown>;
+}
+
+export interface InvoiceLineItemInput {
+  description: string;
+  service_date?: string | null;
+  qty: number;
+  rate: number;
+}
+
+export interface InvoiceInput {
+  patient_id?: string | null;
+  invoice_date: string;
+  due_date?: string | null;
+  bill_to_name: string;
+  bill_to_phone: string;
+  bill_to_location?: string | null;
+  line_items: InvoiceLineItemInput[];
+  amount_paid: number;
+  notes?: string | null;
 }
 
 export interface ListOptions {
@@ -688,6 +708,146 @@ export async function getFeedbackByIdempotencyKey(
   } catch (error) {
     const err = error as Error;
     return { id: null, error: err.message };
+  }
+}
+
+function invoiceColumns(data: InvoiceInput) {
+  const totals = invoiceTotals(data.line_items, data.amount_paid);
+  return {
+    ...data,
+    total_amount: totals.total,
+    payment_status: totals.status,
+  };
+}
+
+async function nextInvoiceNumber(): Promise<{ number: string; error?: string }> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.rpc('next_invoice_number');
+  if (!error && typeof data === 'string' && data.trim()) {
+    return { number: data.trim() };
+  }
+
+  const { data: latest, error: listError } = await supabase
+    .from('invoices')
+    .select('invoice_number')
+    .order('invoice_number', { ascending: false })
+    .limit(1);
+  if (listError) {
+    return { number: '', error: listError.message };
+  }
+  const last = String(latest?.[0]?.invoice_number || 'EMH-0000');
+  const match = last.match(/(\d+)$/);
+  const next = String((match ? Number(match[1]) : 0) + 1).padStart(4, '0');
+  return { number: `EMH-${next}` };
+}
+
+export async function listInvoices(options: ListOptions = {}) {
+  const supabase = getSupabase();
+  const [from, to] = pageRange(options);
+  let query = supabase
+    .from('invoices')
+    .select('*, patients(full_name, phone)', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (options.active === 'inactive') {
+    query = query.eq('is_active', false);
+  } else if (options.active !== 'all') {
+    query = query.eq('is_active', true);
+  }
+
+  if (options.status) {
+    query = query.eq('payment_status', options.status);
+  }
+
+  if (options.search) {
+    const q = options.search.replace(/[%(),]/g, '').trim();
+    query = query.or(
+      `invoice_number.ilike.%${q}%,bill_to_name.ilike.%${q}%,bill_to_phone.ilike.%${q}%,bill_to_location.ilike.%${q}%`,
+    );
+  }
+
+  const { data, error, count } = await query;
+  return { data: data || [], count: count || 0, error: error?.message };
+}
+
+export async function getInvoice(id: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('*, patients(full_name, phone)')
+    .eq('id', id)
+    .single();
+  return { data, error: error?.message };
+}
+
+export async function createInvoice(data: InvoiceInput) {
+  try {
+    const numbered = await nextInvoiceNumber();
+    if (numbered.error || !numbered.number) {
+      return {
+        id: '',
+        data: null,
+        error: numbered.error || 'Could not assign an invoice number.',
+      };
+    }
+
+    const supabase = getSupabase();
+    const { data: result, error } = await supabase
+      .from('invoices')
+      .insert([
+        {
+          ...invoiceColumns(data),
+          invoice_number: numbered.number,
+          is_active: true,
+        },
+      ])
+      .select('*')
+      .single();
+
+    if (error) {
+      return { id: '', data: null, error: error.message };
+    }
+    return { id: result.id, data: result };
+  } catch (error) {
+    const err = error as Error;
+    return { id: '', data: null, error: err.message };
+  }
+}
+
+export async function updateInvoice(id: string, data: InvoiceInput) {
+  try {
+    const supabase = getSupabase();
+    const { data: result, error } = await supabase
+      .from('invoices')
+      .update({
+        ...invoiceColumns(data),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('*')
+      .single();
+    return { data: result, error: error?.message };
+  } catch (error) {
+    const err = error as Error;
+    return { data: null, error: err.message };
+  }
+}
+
+export async function deleteInvoice(id: string) {
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase
+      .from('invoices')
+      .update({
+        is_active: false,
+        inactive_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+    return { success: !error, error: error?.message };
+  } catch (error) {
+    const err = error as Error;
+    return { success: false, error: err.message };
   }
 }
 

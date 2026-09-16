@@ -10,7 +10,7 @@ Reference page: https://www.pexels.com/photo/physiotherapist-helping-patient-to-
 
 | Local file | Pexels image source |
 | --- | --- |
-| care-01.jpg | https://images.pexels.com/photos/20860622/pexels-photo-20860622.jpeg |
+| care-01.jpg | Client-provided clinic photo (landing hero, 2026-09-16) |
 | care-02.jpg | https://images.pexels.com/photos/20860618/pexels-photo-20860618.jpeg |
 | care-03.jpg | https://images.pexels.com/photos/20860590/pexels-photo-20860590.jpeg |
 | care-04.jpg | https://images.pexels.com/photos/20860587/pexels-photo-20860587.jpeg |
@@ -31,4 +31,5 @@ Reference page: https://www.pexels.com/photo/physiotherapist-helping-patient-to-
 | care-22.jpg | https://images.pexels.com/photos/20860586/pexels-photo-20860586.jpeg |
 | care-23.jpg | https://images.pexels.com/photos/20860588/pexels-photo-20860588.jpeg |
 | care-24.jpg | https://images.pexels.com/photos/20860591/pexels-photo-20860591.jpeg |
-| care-musculoskeletal.jpg | Client-provided photo (WhatsApp, 2026-09-15); used for Musculoskeletal care |
+| care-musculoskeletal.jpg | Client-provided photo (musculoskeletal care, 2026-09-16) |
+| care-online.jpg | Client-provided photo (home page 04 online physiotherapy, 2026-09-16) |

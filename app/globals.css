@@ -344,16 +344,16 @@ p {
   z-index: -2;
   background-image: url("/assets/photos/care-01.jpg");
   background-size: cover;
-  background-position: center 42%;
-  opacity: .46;
-  filter: saturate(.9) contrast(1);
+  background-position: 72% 48%;
+  opacity: .48;
+  filter: saturate(.9) contrast(1.02);
   transform: scale(1.03);
 }
 .hero:after {
   z-index: -1;
   background:
-    linear-gradient(90deg, rgba(248, 248, 245, .84) 0%, rgba(248, 248, 245, .48) 44%, rgba(248, 248, 245, .72) 100%),
-    radial-gradient(circle at 78% 38%, rgba(118, 139, 110, .08), transparent 44%);
+    linear-gradient(90deg, rgba(248, 248, 245, .86) 0%, rgba(248, 248, 245, .52) 46%, rgba(248, 248, 245, .38) 100%),
+    radial-gradient(circle at 78% 38%, rgba(118, 139, 110, .07), transparent 44%);
 }
 .hero-inner {
   display: grid;
@@ -917,7 +917,7 @@ details[open] .plus:after {
   aspect-ratio: 4 / 3;
   min-height: 360px;
   object-fit: cover;
-  object-position: center 34%;
+  object-position: 58% 42%;
 }
 .two-col {
   display: grid;
@@ -1556,6 +1556,7 @@ input[type="checkbox"] {
 }
 .workspace-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0;
   border-bottom: 1px solid var(--line);
   margin-bottom: 35px;
@@ -1858,9 +1859,16 @@ input[type="checkbox"] {
 }
 .exercise-row {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--line);
+}
+.exercise-row label {
+  margin-bottom: 4px;
+}
+.exercise-row input,
+.exercise-row textarea {
+  margin-top: 4px;
 }
 .exercise-row-heading {
   display: flex;
@@ -1889,15 +1897,225 @@ input[type="checkbox"] {
   justify-content: center;
   gap: 10px;
 }
+.invoice-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+  margin-top: 28px;
+}
+.invoice-editor .compact-form {
+  max-width: none;
+  margin-top: 0;
+}
+.add-invoice-item {
+  margin: 8px 0 22px;
+  min-height: 44px;
+  width: 100%;
+  justify-content: center;
+  gap: 10px;
+}
+.invoice-item {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.invoice-item .remove-invoice-item {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.invoice-item .remove-invoice-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.invoice-line-amount {
+  margin: 0;
+  align-self: end;
+  font-size: 12px;
+}
+.invoice-line-amount strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 16px;
+}
+.invoice-preview {
+  padding: 28px;
+  background: #fff;
+  border: 1px solid var(--line);
+  align-self: start;
+}
+.invoice-doc {
+  color: var(--ink);
+}
+.invoice-brand {
+  text-align: center;
+  margin-bottom: 12px;
+}
+.invoice-brand img {
+  width: 150px;
+  margin: 0 auto 6px;
+}
+.invoice-brand h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.invoice-meta,
+.invoice-parties,
+.invoice-totals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 24px;
+}
+.invoice-meta {
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.invoice-meta p,
+.invoice-totals p {
+  margin: 0;
+}
+.invoice-meta p {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.invoice-meta span,
+.invoice-totals span,
+.invoice-parties h2 {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.invoice-parties h2 {
+  display: block;
+  margin: 0 0 4px;
+}
+.invoice-meta strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.invoice-parties {
+  margin-bottom: 22px;
+}
+.invoice-parties p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.invoice-lines {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 18px;
+  font-size: 12px;
+}
+.invoice-lines th {
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 10px 8px;
+}
+.invoice-lines td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 8px;
+  vertical-align: top;
+}
+.invoice-lines th:nth-child(3),
+.invoice-lines td:nth-child(3),
+.invoice-lines th:nth-child(4),
+.invoice-lines td:nth-child(4),
+.invoice-lines th:nth-child(5),
+.invoice-lines td:nth-child(5) {
+  text-align: right;
+  white-space: nowrap;
+}
+.invoice-totals {
+  justify-items: end;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+.invoice-totals p {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+  width: min(280px, 100%);
+  font-size: 13px;
+  line-height: 1.25;
+}
+.invoice-status[data-status="PAID"],
+.invoice-status-chip[data-status="PAID"] {
+  color: #246044;
+}
+.invoice-status[data-status="PARTIALLY_PAID"],
+.invoice-status-chip[data-status="PARTIALLY_PAID"] {
+  color: #855f17;
+}
+.invoice-status[data-status="PAYMENT_DUE"],
+.invoice-status-chip[data-status="PAYMENT_DUE"] {
+  color: #8a3d2d;
+}
+.invoice-notes {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
 .chart-preview .exercise-plan {
-  margin: 18px 0 0;
+  margin: 10px 0 0;
 }
 .chart-preview .exercise-plan li {
-  margin: 0 0 16px;
+  margin: 0 0 10px;
 }
 .chart-preview .exercise-plan p {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   white-space: pre-wrap;
+}
+.chart-preview .exercise-plan h3 {
+  font-size: 16px;
+  margin: 0;
+}
+.chart-preview .exercise-doc-brand {
+  width: 210px;
+  margin: 0 auto 12px;
+}
+.chart-preview .exercise-doc-title {
+  margin: 0 0 8px;
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.chart-preview .exercise-doc-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.chart-preview .exercise-doc-meta span:last-child {
+  text-align: right;
+}
+.chart-preview .exercise-doc-name {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 500;
 }
 .chart-preview {
   padding: 35px;
@@ -1942,18 +2160,22 @@ input[type="checkbox"] {
 }
 .summary-letterhead {
   display: grid;
-  grid-template-columns: minmax(86px, 1fr) auto minmax(150px, 1fr);
-  align-items: center;
-  gap: 12px 16px;
+  justify-items: center;
+  text-align: center;
+  gap: 8px;
   padding-bottom: 16px;
   margin-bottom: 22px;
   border-bottom: 1.5px solid var(--ink);
 }
+.summary-letterhead-brand {
+  width: 210px;
+}
 .summary-letterhead-brand img {
-  width: 108px;
+  width: 210px;
+  margin: 0 auto;
 }
 .chart-preview .summary-letterhead-title {
-  margin: 0;
+  margin: 4px 0 0;
   text-align: center;
   font-family: var(--serif);
   font-size: 26px;
@@ -1963,9 +2185,8 @@ input[type="checkbox"] {
 }
 .summary-letterhead-clinician {
   margin: 0;
-  justify-self: end;
-  text-align: right;
-  font-size: 11px;
+  text-align: center;
+  font-size: 12px;
   line-height: 1.45;
 }
 .summary-letterhead-clinician strong,
@@ -1996,10 +2217,10 @@ input[type="checkbox"] {
   white-space: pre-wrap;
 }
 .summary-block {
-  min-height: 88px;
+  min-height: 64px;
   margin: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
+  padding: 0;
+  border: 0;
   white-space: pre-wrap;
 }
 .summary-sign {
@@ -2061,13 +2282,28 @@ input[type="checkbox"] {
 .summary-note strong {
   margin-right: 6px;
 }
+.summary-guidance-heading {
+  margin: 0 0 12px;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+}
+.summary-page-one,
+.summary-page-two {
+  display: block;
+}
+.summary-page-two {
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px dashed var(--line);
+}
+.summary-doc .chart-footer {
+  margin-top: 8px;
+}
 @container (max-width: 520px) {
-  .summary-letterhead {
-    grid-template-columns: 1fr 1fr;
-  }
-  .summary-letterhead-title {
-    grid-column: 1 / -1;
-    order: -1;
+  .summary-letterhead-brand,
+  .summary-letterhead-brand img {
+    width: 170px;
   }
 }
 .signout {
@@ -2695,6 +2931,10 @@ input[type="checkbox"] {
     grid-template-columns: 1fr;
     gap: 25px;
   }
+  .invoice-editor {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
   .workspace-heading {
     align-items: flex-start;
   }
@@ -2802,9 +3042,19 @@ input[type="checkbox"] {
     border: 0 !important;
     width: 100%;
     padding: 10mm;
+    container-type: normal;
   }
   .chart-preview h2 {
     font-size: 30px;
+  }
+  .chart-preview .exercise-doc-title {
+    font-size: 22px;
+  }
+  .chart-preview .exercise-doc-name {
+    font-size: 18px;
+  }
+  .chart-preview .exercise-doc-brand {
+    width: 210px;
   }
   .chart-preview .summary-letterhead-title {
     font-size: 22px;
@@ -2814,6 +3064,17 @@ input[type="checkbox"] {
   .summary-urgent,
   .summary-fields > li:nth-child(-n + 2) {
     break-inside: avoid;
+  }
+  .summary-page-one {
+    break-after: page;
+    page-break-after: always;
+  }
+  .summary-page-two {
+    break-before: page;
+    page-break-before: always;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
   }
   .summary-guidance-grid {
     grid-template-columns: 1fr 1fr;

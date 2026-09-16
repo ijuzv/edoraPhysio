@@ -6,6 +6,15 @@ import {
   appointmentStatusLabels,
   isFinalAppointmentStatus,
 } from '../src/appointment-status';
+import {
+  formatMoney,
+  invoicePaymentStatusLabels,
+  invoicePaymentStatusPrint,
+  invoiceTotals,
+  lineAmount,
+  type InvoiceLineItem,
+  type InvoicePaymentStatus,
+} from '../src/invoice';
 
 interface FormState {
   fingerprint: string;
@@ -501,6 +510,8 @@ export default function Interactions(): null {
       const adminState = {
         appointments: [] as any[],
         patients: [] as any[],
+        invoicePatients: [] as any[],
+        invoices: [] as any[],
         assessments: [] as any[],
         currentAssessment: null as any,
       };
@@ -596,6 +607,34 @@ export default function Interactions(): null {
         'full_residential_address',
         'emergency_contact_full_name',
         'emergency_contact_phone_number',
+        'status',
+      ];
+
+      const invoiceCsvRow = (invoice: any): Record<string, unknown> => ({
+        invoice_number: invoice.invoice_number,
+        invoice_date: invoice.invoice_date,
+        due_date: invoice.due_date,
+        bill_to_name: invoice.bill_to_name,
+        bill_to_phone: invoice.bill_to_phone,
+        bill_to_location: invoice.bill_to_location,
+        total_amount: invoice.total_amount,
+        amount_paid: invoice.amount_paid,
+        payment_status: invoice.payment_status,
+        notes: invoice.notes,
+        status: invoice.is_active === false ? 'Inactive' : 'Active',
+      });
+
+      const invoiceCsvKeys = [
+        'invoice_number',
+        'invoice_date',
+        'due_date',
+        'bill_to_name',
+        'bill_to_phone',
+        'bill_to_location',
+        'total_amount',
+        'amount_paid',
+        'payment_status',
+        'notes',
         'status',
       ];
 
@@ -858,6 +897,310 @@ export default function Interactions(): null {
         renderPager(target, result.count || 0, page, loadAssessments);
       };
 
+      const formatInvoiceDate = (value: unknown): string => {
+        const text = String(value || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+        const [year, month, day] = text.split('-').map(Number);
+        return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
+          'en-GB',
+          {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            timeZone: 'UTC',
+          },
+        );
+      };
+
+      const todayIso = (): string =>
+        new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(
+          new Date(),
+        );
+
+      const invoiceForm = container.querySelector(
+        '#invoice-form',
+      ) as HTMLFormElement | null;
+      const invoiceEditor = container.querySelector(
+        '.invoice-editor',
+      ) as HTMLElement | null;
+      const invoicePreview = container.querySelector(
+        '.invoice-preview',
+      ) as HTMLElement | null;
+      const invoiceItems = container.querySelector(
+        '[data-invoice-items]',
+      ) as HTMLElement | null;
+      let invoiceItemSeq = 0;
+
+      const invoiceValue = (name: string): string =>
+        (
+          (
+            invoiceForm?.querySelector(`[name="${name}"]`) as
+              | HTMLInputElement
+              | HTMLTextAreaElement
+              | HTMLSelectElement
+              | null
+          )?.value || ''
+        ).trim();
+
+      const numberInvoiceItems = (): void => {
+        if (!invoiceItems) return;
+        const rows = [...invoiceItems.querySelectorAll('.invoice-item')];
+        for (const [index, row] of rows.entries()) {
+          const number = row.querySelector('.invoice-item-number');
+          if (number) number.textContent = String(index + 1);
+          const amount = row.querySelector('[data-line-amount]') as HTMLElement | null;
+          const qty = Number(
+            (row.querySelector('[name=item_qty]') as HTMLInputElement | null)
+              ?.value || 0,
+          );
+          const rate = Number(
+            (row.querySelector('[name=item_rate]') as HTMLInputElement | null)
+              ?.value || 0,
+          );
+          if (amount) amount.textContent = formatMoney(lineAmount({ qty, rate }));
+          const remove = row.querySelector(
+            '.remove-invoice-item',
+          ) as HTMLButtonElement | null;
+          if (remove) remove.disabled = rows.length === 1;
+        }
+      };
+
+      const addInvoiceItem = (
+        item?: Partial<InvoiceLineItem>,
+        focus = false,
+      ): void => {
+        if (!invoiceItems) return;
+        invoiceItemSeq += 1;
+        const id = `inv-item-${invoiceItemSeq}`;
+        invoiceItems.insertAdjacentHTML(
+          'beforeend',
+          `<div class="invoice-item">
+            <p class="exercise-row-heading"><span>Service line <span class="invoice-item-number"></span></span><button type="button" class="remove-invoice-item">Remove</button></p>
+            <div class="form-grid">
+              <label class="full">Service description <span class="required">*</span><input id="${id}-desc" name="item_description" maxlength="200" required placeholder="e.g. Home physiotherapy session" value="${esc(item?.description || '')}"></label>
+              <label>Service date<input name="item_service_date" type="date" value="${esc(item?.service_date || '')}"></label>
+              <label>Qty<input name="item_qty" type="number" min="1" max="999" step="1" value="${esc(item?.qty || 1)}" required></label>
+              <label>Rate (₹)<input name="item_rate" type="number" min="0" max="1000000" step="0.01" value="${esc(item?.rate ?? '')}" required></label>
+              <p class="invoice-line-amount">Amount <strong data-line-amount>₹0.00</strong></p>
+            </div>
+          </div>`,
+        );
+        numberInvoiceItems();
+        if (focus) {
+          (invoiceItems.querySelector(`#${id}-desc`) as HTMLInputElement | null)?.focus();
+        }
+      };
+
+      const readInvoiceItems = (): InvoiceLineItem[] => {
+        if (!invoiceItems) return [];
+        return [...invoiceItems.querySelectorAll('.invoice-item')]
+          .map((row) => ({
+            description: (
+              row.querySelector(
+                '[name=item_description]',
+              ) as HTMLInputElement | null
+            )?.value.trim() || '',
+            service_date: (
+              row.querySelector(
+                '[name=item_service_date]',
+              ) as HTMLInputElement | null
+            )?.value.trim() || '',
+            qty: Number(
+              (
+                row.querySelector('[name=item_qty]') as HTMLInputElement | null
+              )?.value || 0,
+            ),
+            rate: Number(
+              (
+                row.querySelector('[name=item_rate]') as HTMLInputElement | null
+              )?.value || 0,
+            ),
+          }))
+          .filter((item) => item.description);
+      };
+
+      const invoiceDocumentHtml = (data: {
+        invoice_number?: string;
+        invoice_date?: string;
+        due_date?: string;
+        bill_to_name?: string;
+        bill_to_phone?: string;
+        bill_to_location?: string;
+        line_items: InvoiceLineItem[];
+        amount_paid?: number;
+        notes?: string;
+      }): string => {
+        const totals = invoiceTotals(data.line_items, Number(data.amount_paid || 0));
+        const status = invoicePaymentStatusPrint[totals.status];
+        const rows = data.line_items.length
+          ? data.line_items
+              .map(
+                (item) =>
+                  `<tr><td>${esc(item.description)}</td><td>${esc(formatInvoiceDate(item.service_date))}</td><td>${esc(item.qty)}</td><td>${esc(formatMoney(item.rate))}</td><td>${esc(formatMoney(lineAmount(item)))}</td></tr>`,
+              )
+              .join('')
+          : '<tr><td colspan="5">Add a service line to this invoice.</td></tr>';
+        return `<div class="invoice-doc">
+          <header class="invoice-brand"><img src="/assets/eduro-logo.png" alt="Eudora Movement House"><h1>Invoice</h1></header>
+          <div class="invoice-meta">
+            <p><span>Invoice number</span><strong>${esc(data.invoice_number || 'Assigned on save')}</strong></p>
+            <p><span>Invoice date</span><strong>${esc(formatInvoiceDate(data.invoice_date))}</strong></p>
+            <p><span>Due date</span><strong>${esc(formatInvoiceDate(data.due_date))}</strong></p>
+            <p><span>Payment status</span><strong class="invoice-status" data-status="${esc(totals.status)}">${esc(status)}</strong></p>
+          </div>
+          <div class="invoice-parties">
+            <section><h2>From</h2><p><strong>Eudora Movement House</strong><br>Varshini Balamurugan, MPT<br>connect@eudoraphysio.com | Bengaluru</p></section>
+            <section><h2>Bill to</h2><p><strong>${esc(data.bill_to_name || 'Client / Patient name')}</strong><br>${esc(data.bill_to_phone || 'Phone number')}<br>${esc(data.bill_to_location || 'Location')}</p></section>
+          </div>
+          <table class="invoice-lines">
+            <thead><tr><th>Service description</th><th>Service date</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div class="invoice-totals">
+            <p><span>Total</span><strong>${esc(formatMoney(totals.total))}</strong></p>
+            <p><span>Amount paid</span><strong>${esc(formatMoney(totals.paid))}</strong></p>
+            <p><span>Balance due</span><strong>${esc(formatMoney(totals.balance))}</strong></p>
+          </div>
+          ${data.notes ? `<p class="invoice-notes">${esc(data.notes)}</p>` : ''}
+        </div>`;
+      };
+
+      const currentInvoiceData = () => ({
+        invoice_number: invoiceValue('invoice_number'),
+        invoice_date: invoiceValue('invoice_date'),
+        due_date: invoiceValue('due_date'),
+        bill_to_name: invoiceValue('bill_to_name'),
+        bill_to_phone: invoiceValue('bill_to_phone'),
+        bill_to_location: invoiceValue('bill_to_location'),
+        line_items: readInvoiceItems(),
+        amount_paid: Number(invoiceValue('amount_paid') || 0),
+        notes: invoiceValue('notes'),
+      });
+
+      const renderInvoicePreview = (): void => {
+        if (!invoicePreview) return;
+        numberInvoiceItems();
+        invoicePreview.innerHTML = invoiceDocumentHtml(currentInvoiceData());
+      };
+
+      const printInvoiceHtml = (inner: string, title: string): void => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+          window.print();
+          return;
+        }
+        const styles = Array.from(
+          document.querySelectorAll('style, link[rel="stylesheet"]'),
+        )
+          .map((node) => node.outerHTML)
+          .join('');
+        printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>${styles}<style>
+          body { background: #fff; margin: 0; padding: 14mm; }
+          .invoice-preview, .invoice-doc { border: 0 !important; width: 100% !important; max-width: none !important; padding: 0 !important; box-shadow: none !important; }
+          @page { size: A4; margin: 12mm; }
+        </style></head><body>${inner}</body></html>`);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
+      };
+
+      const syncInvoicePatientSelect = (): void => {
+        const select = invoiceForm?.querySelector(
+          '[name="invoice_patient_id"]',
+        ) as HTMLSelectElement | null;
+        if (!select) return;
+        const current = select.value;
+        select.innerHTML = `<option value="">Select patient</option>${adminState.invoicePatients
+          .map(
+            (patient) =>
+              `<option value="${esc(patient.id)}">${esc(patient.full_name)} - ${esc(patient.phone || '')}</option>`,
+          )
+          .join('')}`;
+        select.value = current;
+      };
+
+      const loadInvoicePatientOptions = async (): Promise<void> => {
+        const result = await api(
+          '/api/practitioner/patients?page=1&pageSize=100&active=',
+        );
+        adminState.invoicePatients = result.data || [];
+        syncInvoicePatientSelect();
+      };
+
+      const loadInvoices = async (page = 1): Promise<void> => {
+        const q = new URLSearchParams({
+          page: String(page),
+          pageSize: '10',
+          search:
+            (
+              container.querySelector(
+                '[name=invoice-search]',
+              ) as HTMLInputElement | null
+            )?.value || '',
+          status:
+            (
+              container.querySelector(
+                '[name=invoice-status]',
+              ) as HTMLSelectElement | null
+            )?.value || '',
+          active:
+            (
+              container.querySelector(
+                '[name=invoice-active]',
+              ) as HTMLSelectElement | null
+            )?.value || '',
+        });
+        const result = await api(`/api/practitioner/invoices?${q}`);
+        adminState.invoices = result.data || [];
+        const target = container.querySelector(
+          '[data-list=invoices]',
+        ) as HTMLElement;
+        target.innerHTML = `<table><thead><tr><th>Invoice</th><th>Bill to</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>${adminState.invoices
+          .map((x) => {
+            const status = String(x.payment_status || 'PAYMENT_DUE') as InvoicePaymentStatus;
+            return `<tr class="${x.is_active === false ? 'is-inactive' : ''}"><td><strong>${esc(x.invoice_number)}</strong>${x.is_active === false ? '<span class="admin-chip muted-chip">Inactive</span>' : ''}</td><td>${esc(x.bill_to_name)}<br><span class="muted">${esc(x.bill_to_phone || '')}</span></td><td>${esc(x.invoice_date || '')}</td><td>${esc(formatMoney(Number(x.total_amount || 0)))}</td><td><span class="admin-chip invoice-status-chip" data-status="${esc(status)}">${esc(invoicePaymentStatusLabels[status] || status)}</span></td><td><button type="button" data-edit-invoice="${esc(x.id)}" ${x.is_active === false ? 'disabled' : ''}>Edit</button><button type="button" data-download-invoice="${esc(x.id)}">Download</button><button type="button" data-delete-invoice="${esc(x.id)}" ${x.is_active === false ? 'disabled' : ''}>Make inactive</button></td></tr>`;
+          })
+          .join('')}</tbody></table>`;
+        renderPager(target, result.count || 0, page, loadInvoices);
+      };
+
+      const showInvoiceForm = (record?: any): void => {
+        if (!invoiceForm || !invoiceEditor || !invoiceItems) return;
+        invoiceForm.reset();
+        invoiceEditor.hidden = false;
+        invoiceItems.innerHTML = '';
+        invoiceItemSeq = 0;
+        const set = (name: string, value: unknown) => {
+          const field = invoiceForm.elements.namedItem(name) as
+            | HTMLInputElement
+            | HTMLTextAreaElement
+            | HTMLSelectElement
+            | null;
+          if (field) field.value = String(value ?? '');
+        };
+        set('id', record?.id || '');
+        set('invoice_number', record?.invoice_number || '');
+        set('invoice_patient_id', record?.patient_id || '');
+        set('invoice_date', record?.invoice_date || todayIso());
+        set('due_date', record?.due_date || '');
+        set('bill_to_name', record?.bill_to_name || '');
+        set('bill_to_phone', record?.bill_to_phone || '');
+        set('bill_to_location', record?.bill_to_location || '');
+        set('amount_paid', record?.amount_paid ?? 0);
+        set('notes', record?.notes || '');
+        const items = Array.isArray(record?.line_items) ? record.line_items : [];
+        if (items.length) {
+          for (const item of items) addInvoiceItem(item);
+        } else {
+          addInvoiceItem({ qty: 1, rate: 0, description: '', service_date: '' });
+        }
+        invoiceForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        renderInvoicePreview();
+      };
+
       const setPanel = (nextMode: string): void => {
         container.querySelectorAll('[data-panel]').forEach((panel) => {
           const value = (panel as HTMLElement).dataset.panel;
@@ -868,6 +1211,12 @@ export default function Interactions(): null {
         });
         if (nextMode === 'appointments') loadAppointments().catch(() => {});
         if (nextMode === 'patients') loadPatients().catch(() => {});
+        if (nextMode === 'invoices') {
+          Promise.all([
+            loadInvoicePatientOptions().catch(() => {}),
+            loadInvoices().catch(() => {}),
+          ]).catch(() => {});
+        }
         if (nextMode === 'assessments') {
           Promise.all([
             loadPatients(1).catch(() => {}),
@@ -1096,7 +1445,7 @@ export default function Interactions(): null {
           `<div class="exercise-row">
             <p class="exercise-row-heading"><span>Exercise <span class="exercise-number"></span></span><button type="button" class="remove-exercise">Remove</button></p>
             <label>Exercise name<input id="${id}-name" name="exercise_name" maxlength="120" placeholder="Name of the prescribed exercise"></label>
-            <label>Dosage and instructions<textarea id="${id}-dose" name="exercise_dose" rows="2" maxlength="800" placeholder="Repetitions, sets, frequency, technique and any precautions."></textarea></label>
+            <label>Instructions<textarea id="${id}-dose" name="exercise_dose" rows="2" maxlength="800" placeholder="Repetitions, sets, frequency, technique and any precautions."></textarea></label>
           </div>`,
         );
         numberExerciseRows();
@@ -1189,23 +1538,26 @@ export default function Interactions(): null {
           const precautions = String(data.instructions || '').trim();
           const consultDate = formatConsultDate(data.date);
 
-          chart.innerHTML = `<div class="brand"><img src="/assets/eduro-logo.png" alt="Eudora Movement House"></div><p class="eyebrow">Your movement plan</p><h2>${esc(
-            data.patient || 'Patient name',
-          )}</h2><p>${esc(consultDate)}${
-            consultDate ? ' · ' : ''
-          }Varshini Balamurugan, MPT, BPT</p>${exerciseMarkup}${
-            precautions
-              ? `<h3>General precautions</h3><p style="white-space:pre-wrap">${esc(precautions)}</p>`
-              : ''
-          }<p class="chart-footer">Prepared by your physiotherapist for your individual care.<br>Eudora Movement House · +91 74181 58876</p>`;
+          chart.innerHTML = `<div class="exercise-doc">
+            <div class="exercise-doc-brand"><img src="/assets/eduro-logo.png" alt="Eudora Movement House"></div>
+            <h2 class="exercise-doc-title">Your movement plan</h2>
+            <p class="exercise-doc-meta"><span>${esc(consultDate)}</span><span>Varshini Balamurugan, MPT, BPT</span></p>
+            <h3 class="exercise-doc-name">${esc(data.patient || 'Patient name')}</h3>
+            ${exerciseMarkup}${
+              precautions
+                ? `<h3>General precautions</h3><p style="white-space:pre-wrap">${esc(precautions)}</p>`
+                : ''
+            }<p class="chart-footer">Prepared by your physiotherapist for your individual care.<br>Eudora Movement House · +91 74181 58876</p>
+          </div>`;
           return;
         }
 
         chart.innerHTML = `<div class="summary-doc">
+          <div class="summary-page-one">
           <header class="summary-letterhead">
             <div class="summary-letterhead-brand"><img src="/assets/eduro-logo.png" alt="Eudora Movement House"></div>
             <h2 class="summary-letterhead-title">Consultation summary</h2>
-            <p class="summary-letterhead-clinician"><strong>Varshini Balamurugan PT</strong><span>Musculoskeletal Physiotherapist</span><span>MPT · MIAP</span></p>
+            <p class="summary-letterhead-clinician"><strong>Varshini Balamurugan PT, MIAP</strong><span>Musculoskeletal physiotherapist</span></p>
           </header>
           <ol class="summary-fields">
             <li><strong>Name</strong><p class="summary-line">${esc(data.patient || '')}</p></li>
@@ -1213,27 +1565,28 @@ export default function Interactions(): null {
             <li><strong>Summary</strong><p class="summary-block">${esc(data.summary || '')}</p></li>
             <li><strong>Plan of action</strong><p class="summary-block">${esc(data.plan || '')}</p></li>
             <li><strong>Sign</strong><div class="summary-sign"><p class="summary-sign-name">${esc(data.sign || '')}</p></div></li>
-            <li>
-              <strong>Dos and Don'ts</strong>
-              <div class="summary-guidance-grid">
-                <section>
-                  <h3>Do</h3>
-                  ${markedList(summaryDos, '✓')}
-                </section>
-                <section>
-                  <h3>Do Not</h3>
-                  ${markedList(summaryDonts, '×')}
-                </section>
-              </div>
-              <aside class="summary-urgent">
-                <h3><span aria-hidden="true">!</span> Stop activity and seek urgent medical care for</h3>
-                <p>${esc(summaryUrgent)}</p>
-              </aside>
-              <p class="summary-note"><strong>Important</strong> This guidance is general and does not replace your individual physiotherapy plan, medical advice or emergency care.</p>
-              <p class="summary-note"><strong>Evidence base</strong> ${esc(summaryEvidence)}</p>
-            </li>
           </ol>
           <p class="chart-footer">Prepared by your physiotherapist for your individual care.<br>Eudora Movement House · +91 74181 58876</p>
+          </div>
+          <section class="summary-page-two">
+            <h3 class="summary-guidance-heading">Dos and Don'ts</h3>
+            <div class="summary-guidance-grid">
+              <section>
+                <h3>Do</h3>
+                ${markedList(summaryDos, '✓')}
+              </section>
+              <section>
+                <h3>Do Not</h3>
+                ${markedList(summaryDonts, '×')}
+              </section>
+            </div>
+            <aside class="summary-urgent">
+              <h3><span aria-hidden="true">!</span> Stop activity and seek urgent medical care for</h3>
+              <p>${esc(summaryUrgent)}</p>
+            </aside>
+            <p class="summary-note"><strong>Important</strong> This guidance is general and does not replace your individual physiotherapy plan, medical advice or emergency care.</p>
+            <p class="summary-note"><strong>Evidence base</strong> ${esc(summaryEvidence)}</p>
+          </section>
         </div>`;
       };
 
@@ -1369,6 +1722,13 @@ export default function Interactions(): null {
       listen(container.querySelector('.cancel-patient'), 'click', () => {
         if (patientForm) patientForm.hidden = true;
       });
+      listen(container.querySelector('.new-invoice'), 'click', async () => {
+        await loadInvoicePatientOptions().catch(() => {});
+        showInvoiceForm();
+      });
+      listen(container.querySelector('.cancel-invoice'), 'click', () => {
+        if (invoiceEditor) invoiceEditor.hidden = true;
+      });
       listen(container.querySelector('.cancel-appointment'), 'click', () => {
         if (appointmentForm) appointmentForm.hidden = true;
       });
@@ -1425,6 +1785,97 @@ export default function Interactions(): null {
           }
         });
       });
+
+      const collectInvoice = () => ({
+        patient_id: invoiceValue('invoice_patient_id') || null,
+        invoice_date: invoiceValue('invoice_date'),
+        due_date: invoiceValue('due_date') || null,
+        bill_to_name: invoiceValue('bill_to_name'),
+        bill_to_phone: invoiceValue('bill_to_phone'),
+        bill_to_location: invoiceValue('bill_to_location'),
+        line_items: readInvoiceItems(),
+        amount_paid: Number(invoiceValue('amount_paid') || 0),
+        notes: invoiceValue('notes'),
+      });
+
+      listen(invoiceForm, 'input', () => renderInvoicePreview());
+      listen(invoiceForm, 'click', (event) => {
+        const target = event.target as HTMLElement;
+        if (target.closest('.add-invoice-item')) {
+          addInvoiceItem({ qty: 1, rate: 0, description: '', service_date: '' }, true);
+          renderInvoicePreview();
+          return;
+        }
+        const remove = target.closest(
+          '.remove-invoice-item',
+        ) as HTMLButtonElement | null;
+        if (!remove || remove.disabled) return;
+        remove.closest('.invoice-item')?.remove();
+        numberInvoiceItems();
+        renderInvoicePreview();
+      });
+      listen(invoiceForm, 'submit', async (event) => {
+        event.preventDefault();
+        if (!invoiceForm || !invoiceForm.reportValidity()) return;
+        const payload = collectInvoice();
+        if (payload.line_items.length === 0) {
+          status(invoiceForm, 'Please add at least one service line.', true);
+          return;
+        }
+        const id = invoiceValue('id');
+        const button = invoiceForm.querySelector(
+          'button[type=submit]',
+        ) as HTMLButtonElement | null;
+        await withButtonLoading(button, 'Saving', async () => {
+          try {
+            const result = await api(
+              id
+                ? `/api/practitioner/invoices/${encodeURIComponent(id)}`
+                : '/api/practitioner/invoices',
+              {
+                method: id ? 'PUT' : 'POST',
+                body: JSON.stringify(payload),
+              },
+            );
+            if (result?.data?.invoice_number) {
+              const numberField = invoiceForm.elements.namedItem(
+                'invoice_number',
+              ) as HTMLInputElement | null;
+              if (numberField) numberField.value = result.data.invoice_number;
+            }
+            if (result?.id) {
+              const idField = invoiceForm.elements.namedItem(
+                'id',
+              ) as HTMLInputElement | null;
+              if (idField) idField.value = result.id;
+            }
+            status(invoiceForm, 'Invoice saved.');
+            renderInvoicePreview();
+            await loadInvoices();
+          } catch (error) {
+            status(invoiceForm, (error as Error).message, true);
+          }
+        });
+      });
+      listen(
+        container.querySelector('.download-invoice-form'),
+        'click',
+        async (event) => {
+          const button = event.currentTarget as HTMLButtonElement;
+          await withButtonLoading(button, 'Preparing', async () => {
+            if (!invoiceForm?.reportValidity()) return;
+            const data = currentInvoiceData();
+            if (data.line_items.length === 0) {
+              status(invoiceForm, 'Please add at least one service line.', true);
+              return;
+            }
+            printInvoiceHtml(
+              invoiceDocumentHtml(data),
+              data.invoice_number || 'Eudora invoice',
+            );
+          });
+        },
+      );
 
       listen(assessmentForm, 'submit', async (event) => {
         event.preventDefault();
@@ -1546,6 +1997,50 @@ export default function Interactions(): null {
             );
           });
         }
+        const editInvoiceId = button.dataset.editInvoice;
+        if (editInvoiceId) {
+          const row = adminState.invoices.find((x) => x.id === editInvoiceId);
+          await loadInvoicePatientOptions().catch(() => {});
+          showInvoiceForm(row);
+        }
+        const deleteInvoiceId = button.dataset.deleteInvoice;
+        if (
+          deleteInvoiceId &&
+          confirm('This will make the invoice inactive. Continue?')
+        ) {
+          try {
+            await withButtonLoading(button, 'Updating', async () => {
+              await api(`/api/practitioner/invoices/${deleteInvoiceId}`, {
+                method: 'DELETE',
+              });
+              await loadInvoices();
+              if (invoiceEditor) invoiceEditor.hidden = true;
+            });
+          } catch (error) {
+            alert((error as Error).message);
+          }
+        }
+        const downloadInvoiceId = button.dataset.downloadInvoice;
+        if (downloadInvoiceId) {
+          const row = adminState.invoices.find((x) => x.id === downloadInvoiceId);
+          if (!row) return;
+          await withButtonLoading(button, 'Preparing', async () => {
+            printInvoiceHtml(
+              invoiceDocumentHtml({
+                invoice_number: row.invoice_number,
+                invoice_date: row.invoice_date,
+                due_date: row.due_date,
+                bill_to_name: row.bill_to_name,
+                bill_to_phone: row.bill_to_phone,
+                bill_to_location: row.bill_to_location,
+                line_items: Array.isArray(row.line_items) ? row.line_items : [],
+                amount_paid: Number(row.amount_paid || 0),
+                notes: row.notes || '',
+              }),
+              row.invoice_number || 'Eudora invoice',
+            );
+          });
+        }
       });
 
       listen(container, 'change', async (event) => {
@@ -1554,6 +2049,25 @@ export default function Interactions(): null {
           const patient = adminState.patients.find((x) => x.id === target.value);
           if (patient) {
             fillAssessmentPatient(patient);
+          }
+          return;
+        }
+        if (target.name === 'invoice_patient_id') {
+          const patient = adminState.invoicePatients.find(
+            (x) => x.id === target.value,
+          );
+          if (patient && invoiceForm) {
+            const set = (name: string, value: unknown) => {
+              const field = invoiceForm.elements.namedItem(name) as
+                | HTMLInputElement
+                | HTMLTextAreaElement
+                | null;
+              if (field) field.value = String(value ?? '');
+            };
+            set('bill_to_name', patient.full_name);
+            set('bill_to_phone', patient.phone);
+            set('bill_to_location', patient.address || '');
+            renderInvoicePreview();
           }
           return;
         }
@@ -1610,6 +2124,15 @@ export default function Interactions(): null {
         );
       }
       for (const selector of [
+        '[name=invoice-search]',
+        '[name=invoice-status]',
+        '[name=invoice-active]',
+      ]) {
+        listen(container.querySelector(selector), 'input', () =>
+          loadInvoices().catch(() => {}),
+        );
+      }
+      for (const selector of [
         '[name=assessment-search]',
         '[name=assessment-type]',
         '[name=assessment-active]',
@@ -1650,6 +2173,24 @@ export default function Interactions(): null {
         download(
           'patients.csv',
           csv((result.data || []).map(patientCsvRow), patientCsvKeys),
+          'text/csv',
+        );
+        });
+      });
+      listen(container.querySelector('.export-invoices'), 'click', async (event) => {
+        const button = event.currentTarget as HTMLButtonElement;
+        await withButtonLoading(button, 'Exporting', async () => {
+        const q = new URLSearchParams({
+          page: '1',
+          pageSize: '100',
+          search: (container.querySelector('[name=invoice-search]') as HTMLInputElement)?.value || '',
+          status: (container.querySelector('[name=invoice-status]') as HTMLSelectElement)?.value || '',
+          active: (container.querySelector('[name=invoice-active]') as HTMLSelectElement)?.value || '',
+        });
+        const result = await api(`/api/practitioner/invoices?${q}`);
+        download(
+          'invoices.csv',
+          csv((result.data || []).map(invoiceCsvRow), invoiceCsvKeys),
           'text/csv',
         );
         });
@@ -1713,12 +2254,19 @@ export default function Interactions(): null {
           .join('');
         printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Eudora document</title>${styles}<style>
           body { background: #fff; margin: 0; padding: 18mm; }
-          .chart-preview { border: 0 !important; width: 100% !important; max-width: none !important; padding: 0 !important; }
+          .chart-preview { border: 0 !important; width: 100% !important; max-width: none !important; padding: 0 !important; container-type: normal !important; }
+          .summary-page-one { break-after: page !important; page-break-after: always !important; }
           .chart-preview h2 { font-size: 30px; }
           .chart-preview .summary-letterhead-title { font-size: 22px; }
+          .chart-preview .summary-letterhead-brand,
+          .chart-preview .summary-letterhead-brand img { width: 210px; margin: 0 auto; }
+          .chart-preview .exercise-doc-title { font-size: 22px; }
+          .chart-preview .exercise-doc-name { font-size: 18px; }
+          .chart-preview .exercise-doc-brand { width: 210px; margin: 0 auto 12px; }
           .chart-preview p, .chart-preview li { font-size: 12px; }
           .summary-guidance-grid { grid-template-columns: 1fr 1fr; }
-          .summary-block { min-height: 64px; }
+          .summary-block { min-height: 64px; border: 0; padding: 0; }
+          .summary-page-two { break-before: page !important; page-break-before: always !important; margin-top: 0; padding-top: 0; border-top: 0; }
           @page { size: A4; margin: 15mm; }
         </style></head><body><article class="chart-preview">${chart.innerHTML}</article></body></html>`);
         printWindow.document.close();

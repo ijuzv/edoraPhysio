@@ -11,7 +11,7 @@ export const workspaceHtml = `
   <div class="workspace-heading">
     <div>
       <h2>Practitioner tools</h2>
-      <p class="small">Manage appointments, patients, PAR-Q forms, exercise charts and consultation summaries. Details stay protected behind practitioner access.</p>
+      <p class="small">Manage appointments, patients, invoices, PAR-Q forms, exercise charts and consultation summaries. Details stay protected behind practitioner access.</p>
     </div>
     <button class="signout">Sign out</button>
   </div>
@@ -19,6 +19,7 @@ export const workspaceHtml = `
   <div class="workspace-tabs" role="tablist" aria-label="Workspace sections">
     <button role="tab" aria-selected="true" data-mode="appointments">Appointments</button>
     <button role="tab" aria-selected="false" data-mode="patients">Patients</button>
+    <button role="tab" aria-selected="false" data-mode="invoices">Invoices</button>
     <button role="tab" aria-selected="false" data-mode="assessments">PAR-Q forms</button>
     <button role="tab" aria-selected="false" data-mode="exercise">Exercise chart</button>
     <button role="tab" aria-selected="false" data-mode="summary">Consultation summary</button>
@@ -77,6 +78,47 @@ export const workspaceHtml = `
       </div>
       <div class="form-status" role="status" tabindex="-1"></div>
     </form>
+  </section>
+
+  <section class="admin-panel" data-panel="invoices" hidden>
+    <div class="admin-toolbar">
+      <input name="invoice-search" placeholder="Search invoices">
+      <select name="invoice-status"><option value="">All payment statuses</option><option value="PAYMENT_DUE">Payment due</option><option value="PARTIALLY_PAID">Partially paid</option><option value="PAID">Paid</option></select>
+      <select name="invoice-active"><option value="">Active</option><option value="inactive">Inactive</option><option value="all">All</option></select>
+      <button type="button" class="button-light new-invoice">New invoice</button>
+      <button type="button" class="button-light export-invoices">Export filtered</button>
+    </div>
+    <div class="admin-table" data-list="invoices"></div>
+    <div class="invoice-editor" hidden>
+      <form id="invoice-form" class="assessment-form compact-form">
+        <input type="hidden" name="id">
+        <h3>Invoice details</h3>
+        <div class="form-grid">
+          <label>Invoice number<input name="invoice_number" readonly placeholder="Assigned when you save"></label>
+          <label class="patient-map-field">Map to existing patient<select name="invoice_patient_id"><option value="">Select patient</option></select></label>
+          <label>Invoice date <span class="required">*</span><input name="invoice_date" type="date" required></label>
+          <label>Due date<input name="due_date" type="date"></label>
+          <label>Client / patient name <span class="required">*</span><input name="bill_to_name" required maxlength="120"></label>
+          <label>Phone number <span class="required">*</span><input name="bill_to_phone" required maxlength="20"></label>
+          <label class="full">Location<input name="bill_to_location" maxlength="200"></label>
+        </div>
+        <h3>Services</h3>
+        <p class="small">Add each service for this invoice. Amount is calculated from quantity × rate.</p>
+        <div class="invoice-items" data-invoice-items></div>
+        <button type="button" class="button button-light add-invoice-item">Add service line <span aria-hidden="true">+</span></button>
+        <div class="form-grid">
+          <label>Amount paid (₹)<input name="amount_paid" type="number" min="0" max="1000000" step="0.01" value="0"></label>
+          <label class="full">Notes<textarea name="notes" rows="2" maxlength="2000" placeholder="Optional payment or service notes."></textarea></label>
+        </div>
+        <div class="form-actions">
+          <button class="button" type="submit">Save invoice <span aria-hidden="true">↗</span></button>
+          <button class="button-light download-invoice-form" type="button">Download PDF <span aria-hidden="true">↗</span></button>
+          <button class="button-light cancel-invoice" type="button">Cancel</button>
+        </div>
+        <div class="form-status" role="status" tabindex="-1"></div>
+      </form>
+      <article class="invoice-preview" aria-label="Invoice preview"></article>
+    </div>
   </section>
 
   <section class="admin-panel" data-panel="assessments" hidden>
