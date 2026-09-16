@@ -33,3 +33,5 @@ Reference page: https://www.pexels.com/photo/physiotherapist-helping-patient-to-
 | care-24.jpg | https://images.pexels.com/photos/20860591/pexels-photo-20860591.jpeg |
 | care-musculoskeletal.jpg | Client-provided photo (musculoskeletal care, 2026-09-16) |
 | care-online.jpg | Client-provided photo (home page 04 online physiotherapy, 2026-09-16) |
+| care-online-distance.jpg | Client-provided photo (online physiotherapy distance section, 2026-09-16) |
+| care-guided.jpg | Client-provided photo (services guided with care section, 2026-09-16) |

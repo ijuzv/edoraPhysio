@@ -50,7 +50,7 @@ export async function generateMetadata({
       ...(origin && !isPrivate
         ? {
             url: origin + page.path,
-            images: [origin + '/assets/eduro-logo.png'],
+            images: [origin + '/assets/eudora%20defined%20logo.png'],
           }
         : {}),
     },

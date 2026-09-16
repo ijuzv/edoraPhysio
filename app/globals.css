@@ -157,8 +157,9 @@ p {
   color: #517246;
   border-color: currentColor;
 }
-.text-link span {
-  font-size: 17px;
+.text-link .arrow-icon {
+  width: 12px;
+  height: 12px;
 }
 .button {
   display: inline-flex;
@@ -179,9 +180,21 @@ p {
   transform: translateY(-2px);
   box-shadow: 0 14px 28px rgba(36, 85, 82, .14);
 }
-.button span {
-  font-size: 18px;
-  line-height: 1;
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+.arrow-icon {
+  width: 13px;
+  height: 13px;
+  display: block;
+}
+.button .arrow .arrow-icon {
+  width: 14px;
+  height: 14px;
 }
 .button-light {
   background: var(--paper);
@@ -242,7 +255,6 @@ p {
   mix-blend-mode: normal;
 }
 .site-header .brand img {
-  filter: brightness(0) invert(1);
   opacity: .96;
 }
 .header-inner nav {
@@ -424,14 +436,18 @@ p {
   font-size: 12px;
   font-weight: 700;
 }
-.therapist-highlight span {
+.therapist-highlight span:not(.arrow) {
   font-size: 11px;
   color: var(--sage);
   font-weight: 600;
 }
-.therapist-highlight > span:last-child {
-  font-size: 16px;
-  line-height: 1;
+.therapist-highlight .arrow {
+  margin-top: 4px;
+  color: var(--ink);
+}
+.therapist-highlight .arrow-icon {
+  width: 14px;
+  height: 14px;
 }
 .hero-title,
 .hero-aside {
@@ -515,12 +531,23 @@ p {
   max-width: 220px;
   margin-bottom: 13px;
   padding: 0 27px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 .service p {
   font-size: 12px;
   line-height: 1.8;
   margin-bottom: 28px;
   padding: 0 27px;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  overflow: hidden;
 }
 .service-arrow {
   align-self: flex-end;
@@ -917,7 +944,7 @@ details[open] .plus:after {
   aspect-ratio: 4 / 3;
   min-height: 360px;
   object-fit: cover;
-  object-position: 58% 42%;
+  object-position: 52% 48%;
 }
 .two-col {
   display: grid;
@@ -1958,13 +1985,15 @@ input[type="checkbox"] {
   width: 150px;
   margin: 0 auto 6px;
 }
-.invoice-brand h1 {
+.invoice-brand .invoice-title {
   margin: 0;
-  font-family: var(--serif);
-  font-size: 20px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  color: var(--ink);
+  line-height: 1.2;
 }
 .invoice-meta,
 .invoice-parties,
@@ -2554,6 +2583,7 @@ input[type="checkbox"] {
   }
   .hero .button {
     padding: 15px 18px;
+    gap: 12px;
   }
   .hero .text-link {
     font-size: 11px;
@@ -2588,8 +2618,8 @@ input[type="checkbox"] {
     grid-template-columns: 1fr 1fr;
   }
   .service {
-    min-height: 250px;
-    padding: 23px 19px !important;
+    min-height: 0;
+    padding: 0 !important;
   }
   .service:nth-child(odd) {
     padding-left: 0 !important;
@@ -2600,14 +2630,27 @@ input[type="checkbox"] {
   .service:nth-child(-n + 2) {
     border-bottom: 1px solid #cbd5c7;
   }
+  .service-number,
+  .service h3,
+  .service p {
+    padding-inline: 14px;
+  }
   .service-number {
-    margin-bottom: 33px;
+    margin-bottom: 12px;
+    padding-top: 16px;
   }
   .service h3 {
-    font-size: 25px;
+    font-size: 22px;
+    max-width: none;
+    -webkit-line-clamp: 3;
   }
   .service p {
     font-size: 12px;
+    margin-bottom: 16px;
+    -webkit-line-clamp: 5;
+  }
+  .service-arrow {
+    padding: 0 14px 16px;
   }
   .about-grid {
     display: flex;
@@ -2758,6 +2801,7 @@ input[type="checkbox"] {
     width: 100%;
     min-height: 45px;
     padding: 11px 18px;
+    gap: 12px;
   }
   .page-hero {
     padding-block: 40px;

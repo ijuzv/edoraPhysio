@@ -12,7 +12,9 @@ interface Page {
   privatePage: boolean;
 }
 
-const arrow = '<span aria-hidden="true">↗</span>';
+const arrowIcon =
+  '<svg class="arrow-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.2 11.8 11.8 4.2M6.5 4.2H11.8V9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const arrow = `<span class="arrow" aria-hidden="true">${arrowIcon}</span>`;
 const wa = 'https://wa.me/917418158876';
 const email = 'connect@eudoraphysio.com';
 
@@ -150,9 +152,11 @@ const eyebrow = (text: string): string => {
   return `<p class="eyebrow">${text}</p>`;
 };
 
-const brand = `<img src="/assets/eduro-logo.png" width="1880" height="1074" alt="Eudora Movement House — The light after recovery">`;
+const brandAlt = 'Eudora Movement House — The light after recovery';
+const brand = `<img src="/assets/eudora%20defined%20logo.png" width="1608" height="978" alt="${brandAlt}">`;
+const brandWhite = `<img src="/assets/eudora-white-log.png" width="1608" height="978" alt="${brandAlt}">`;
 
-const nav = `<header class="site-header"><div class="wrap header-inner"><a class="brand" href="/" aria-label="Eudora Movement House home">${brand}</a><button class="menu-toggle" aria-expanded="false" aria-controls="main-nav">Menu <span aria-hidden="true">☰</span></button><nav id="main-nav" aria-label="Main navigation"><div class="nav-group"><a href="/services/">Our care</a><div class="nav-submenu"><a href="/services/#pain">Pain management</a><a href="/services/#conditions">Conditions we treat</a><a href="/services/#rehabilitation">Injury, sports & post-surgical rehabilitation</a><a href="/services/#movement">Movement & strength</a></div></div><a href="/about/">About</a><a href="/online-physiotherapy/">Online care</a><a href="/contact/" class="nav-book">Book a consultation ${arrow}</a></nav></div></header>`;
+const nav = `<header class="site-header"><div class="wrap header-inner"><a class="brand" href="/" aria-label="Eudora Movement House home">${brandWhite}</a><button class="menu-toggle" aria-expanded="false" aria-controls="main-nav">Menu <span aria-hidden="true">☰</span></button><nav id="main-nav" aria-label="Main navigation"><div class="nav-group"><a href="/services/">Our care</a><div class="nav-submenu"><a href="/services/#pain">Pain management</a><a href="/services/#conditions">Conditions we treat</a><a href="/services/#rehabilitation">Injury, sports & post-surgical rehabilitation</a><a href="/services/#movement">Movement & strength</a></div></div><a href="/about/">About</a><a href="/online-physiotherapy/">Online care</a><a href="/contact/" class="nav-book">Book a consultation ${arrow}</a></nav></div></header>`;
 
 const footer = `<footer class="site-footer wrap"><div class="footer-top"><a class="brand" href="/" aria-label="Eudora Movement House home">${brand}</a><p class="footer-tagline">This is The Light After Recovery.</p><p class="footer-therapist"><strong>Varshini Balamurugan (PT)</strong><span>Musculoskeletal Physiotherapist</span></p><div><a href="tel:+917418158876">+91 74181 58876</a><a href="mailto:${email}">${email}</a></div></div><div class="footer-links"><a href="/why-eudora/">Why Eudora</a><a href="/areas/">Areas we serve</a><a href="/faq/">FAQs</a><a href="/feedback/">Share feedback</a></div><div class="footer-bottom"><p>© ${new Date().getFullYear()} Eudora Movement House</p><div><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/practitioner/">Practitioner</a></div><p>Bengaluru, India</p></div></footer><a class="whatsapp" href="${wa}" target="_blank" rel="noopener noreferrer" aria-label="Chat with Eudora on WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.6 7.5L3 20.5l1.4-4.7A8.5 8.5 0 1 1 20.5 11.6Z"/><path d="M8 7.5c-.9.7-.7 2.2.6 4s3.3 3.1 4.8 3.3c1.1.1 1.8-.5 2-1.3l-2-1.2-1 1c-1.5-.6-2.7-1.8-3.2-3l.8-.8-1-2Z"/></svg><span>Let's talk</span></a><div class="mobile-book">${button(
   'Book a consultation',
@@ -244,7 +248,7 @@ add(
         };
         return `<a class="service" href="${
           hrefMap[id]
-        }"><img src="/assets/${imageSrc}" alt="${title}" class="service-image"><span class="service-number">${n}</span><h3>${title}</h3><p>${desc}</p><span class="service-arrow" aria-hidden="true">↗</span></a>`;
+        }"><img src="/assets/${imageSrc}" alt="${title}" class="service-image"><span class="service-number">${n}</span><h3>${title}</h3><p>${desc}</p><span class="service-arrow arrow" aria-hidden="true">${arrowIcon}</span></a>`;
       }
     )
     .join(
@@ -275,7 +279,7 @@ add(
     'Our care',
     'Care that meets<br><em>you where you are.</em>',
     'Every plan begins with understanding what you are experiencing, what movement asks of your body, and what you want to return to with confidence.',
-  )}<section class="wrap section image-story"><img src="/assets/photos/care-guided.jpg" alt="Patient following guided stretches during an online physiotherapy session" class="story-image"><div>${eyebrow(
+  )}<section class="wrap section image-story"><img src="/assets/photos/care-guided.jpg" alt="Physiotherapist guiding a patient's shoulder and arm during an in-person session" class="story-image"><div>${eyebrow(
     'Care in practice',
   )}<h2>Guided with care.<br><em>Built around you.</em></h2><p>Real movement, careful assessment and practical rehabilitation shape the way Eudora supports pain, injury recovery and strength.</p></div></section><section class="wrap care-pillars section"><article id="pain" class="pillar-card"><span class="service-number">01 / Pain management</span><div><h2>Understand the pain.<br><em>Address what contributes.</em></h2><p>Pain is more than a symptom. We look at what may be contributing to it, address the factors we can influence, and help you move forward with confidence.</p>${pillarVisual(
     'care-pain.jpg',
@@ -364,7 +368,7 @@ add(
   'Understand online physiotherapy with Eudora Movement House, from video assessment to personalised exercise guidance.',
   `<section class="page-hero wrap online-hero"><div>${eyebrow(
     'Care, wherever you are',
-  )}<h1>Your recovery doesn't have to<br><em>depend on distance.</em></h1><p class="lead">Whether you're managing pain, rebuilding after an injury or working towards moving with greater confidence, Eudora brings personalised physiotherapy guidance to wherever you are. The distance may be different. The attention to your recovery isn't.</p></div><img src="/assets/photos/care-online.jpg" alt="Person stretching at home during a live online physiotherapy session" class="story-image"></section><section class="soft-section section online-flow"><div class="wrap"><div class="section-heading"><div>${eyebrow(
+  )}<h1>Your recovery doesn't have to<br><em>depend on distance.</em></h1><p class="lead">Whether you're managing pain, rebuilding after an injury or working towards moving with greater confidence, Eudora brings personalised physiotherapy guidance to wherever you are. The distance may be different. The attention to your recovery isn't.</p></div><img src="/assets/photos/care-online-distance.jpg" alt="Person following a live online physiotherapy stretch at home" class="story-image"></section><section class="soft-section section online-flow"><div class="wrap"><div class="section-heading"><div>${eyebrow(
     'How online care works',
   )}<h2>Guided care,<br><em>step by step.</em></h2></div><p>Each session is shaped around your symptoms, goals and the kind of support that can be offered safely through live video.</p></div><ol class="steps online-steps"><li><span>01</span><h3>Assessment</h3><p>We begin by understanding your symptoms, medical history, movement concerns and recovery goals, followed by a guided virtual movement assessment where appropriate.</p></li><li><span>02</span><h3>Pain & movement support</h3><p>Your session may include guided mobility, movement strategies and self-release techniques to help manage pain, stiffness and muscle tension.</p></li><li><span>03</span><h3>Personalised rehabilitation</h3><p>You receive an individualised programme that may include mobility, strengthening, flexibility, movement retraining and functional exercises based on your assessment and goals.</p></li><li><span>04</span><h3>Guided sessions</h3><p>Your physiotherapist observes your movement, guides exercise technique and helps you understand how to perform your programme safely and effectively.</p></li><li><span>05</span><h3>Progress & follow-up</h3><p>Your progress is reviewed over time, with exercises and strategies adjusted as you improve—providing continued guidance beyond a single consultation.</p></li></ol></div></section><section class="wrap section two-col online-panel online-benefit-panel"><div>${eyebrow(
     'Who can benefit',
@@ -388,7 +392,7 @@ add(
     'Your neighbourhood.<br><em>Your familiar space.</em>',
     'Home physiotherapy across selected Bengaluru neighbourhoods, with appointments arranged personally.',
   )}<section class="wrap two-col section"><div><h2>Home visits<br><em>in Bengaluru.</em></h2><p>Tell us your locality when you get in touch. We'll confirm availability before scheduling your visit.</p><a href="https://www.google.com/maps/search/Bengaluru/" class="text-link" target="_blank" rel="noopener noreferrer">View Bengaluru on Google Maps ${arrow}</a><iframe class="area-map" title="Map of Bengaluru, the home-visit service city" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d248067.50598690342!2d77.50961057910156!3d13.193488!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae173662d799cd%3A0x3e6537cdfb28db49!2sBengaluru!5e0!3m2!1sen!2sin!4v1234567890" loading="lazy" sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe></div><ul class="area-list">${locations
-    .map((x) => `<li><a href="https://www.google.com/maps/search/${encodeURIComponent(x)}+Bengaluru/" target="_blank" rel="noopener noreferrer">${x}<span aria-hidden="true">↗</span></a></li>`)
+    .map((x) => `<li><a href="https://www.google.com/maps/search/${encodeURIComponent(x)}+Bengaluru/" target="_blank" rel="noopener noreferrer">${x}${arrow}</a></li>`)
     .join(
       '',
     )}</ul></section><section class="soft-section section"><div class="wrap two-col"><h2>A different<br><em>postcode?</em></h2><div class="body-copy"><p>Ask us about your location, or explore online physiotherapy. Online care may be an option depending on your assessment and needs.</p><a href="/online-physiotherapy/" class="text-link">Explore online consultations ${arrow}</a></div></div></section>`,

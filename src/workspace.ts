@@ -43,7 +43,7 @@ export const workspaceHtml = `
         <label>Preferred time <span class="required">*</span><input name="time" required maxlength="30"></label>
       </div>
       <div class="form-actions">
-        <button class="button" type="submit">Save appointment <span aria-hidden="true">↗</span></button>
+        <button class="button" type="submit">Save appointment <span class="arrow" aria-hidden="true"><svg class="arrow-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.2 11.8 11.8 4.2M6.5 4.2H11.8V9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
         <button class="button-light cancel-appointment" type="button">Cancel</button>
       </div>
       <div class="form-status" role="status" tabindex="-1"></div>
@@ -73,7 +73,7 @@ export const workspaceHtml = `
         <label>Emergency contact phone number<input name="emergency_contact_phone" maxlength="20"></label>
       </div>
       <div class="form-actions">
-        <button class="button" type="submit">Save patient <span aria-hidden="true">↗</span></button>
+        <button class="button" type="submit">Save patient <span class="arrow" aria-hidden="true"><svg class="arrow-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.2 11.8 11.8 4.2M6.5 4.2H11.8V9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
         <button class="button-light cancel-patient" type="button">Cancel</button>
       </div>
       <div class="form-status" role="status" tabindex="-1"></div>
@@ -111,8 +111,8 @@ export const workspaceHtml = `
           <label class="full">Notes<textarea name="notes" rows="2" maxlength="2000" placeholder="Optional payment or service notes."></textarea></label>
         </div>
         <div class="form-actions">
-          <button class="button" type="submit">Save invoice <span aria-hidden="true">↗</span></button>
-          <button class="button-light download-invoice-form" type="button">Download PDF <span aria-hidden="true">↗</span></button>
+          <button class="button" type="submit">Save invoice <span class="arrow" aria-hidden="true"><svg class="arrow-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.2 11.8 11.8 4.2M6.5 4.2H11.8V9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+          <button class="button-light download-invoice-form" type="button">Download PDF <span class="arrow" aria-hidden="true"><svg class="arrow-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.2 11.8 11.8 4.2M6.5 4.2H11.8V9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
           <button class="button-light cancel-invoice" type="button">Cancel</button>
         </div>
         <div class="form-status" role="status" tabindex="-1"></div>
@@ -190,7 +190,7 @@ export const workspaceHtml = `
       <label class="consent"><input type="checkbox" name="consent_confirmed" required> Patient has read, understood and voluntarily consents to physiotherapy assessment and treatment.</label>
       <label>Electronic signature - Patient/client full name <span class="required">*</span><input name="electronic_signature" required maxlength="120"></label>
       <div class="form-actions">
-        <button class="button" type="submit">Save PAR-Q <span aria-hidden="true">↗</span></button>
+        <button class="button" type="submit">Save PAR-Q <span class="arrow" aria-hidden="true"><svg class="arrow-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.2 11.8 11.8 4.2M6.5 4.2H11.8V9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
         <button class="button-light cancel-assessment" type="button">Cancel</button>
       </div>
       <div class="form-status" role="status" tabindex="-1"></div>
@@ -215,7 +215,7 @@ export const workspaceHtml = `
         <label>Sign<input name="sign" maxlength="120" placeholder="Varshini Balamurugan PT"></label>
         <p class="small">Dos and Don'ts, urgent-care guidance and evidence notes are included automatically on the document.</p>
       </fieldset>
-      <button class="button print-button" type="button">Download PDF <span aria-hidden="true">↗</span></button>
+      <button class="button print-button" type="button">Download PDF <span class="arrow" aria-hidden="true"><svg class="arrow-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.2 11.8 11.8 4.2M6.5 4.2H11.8V9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
     </form>
     <article class="chart-preview" aria-label="Document preview"></article>
   </section>

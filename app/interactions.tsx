@@ -898,9 +898,12 @@ export default function Interactions(): null {
       };
 
       const formatInvoiceDate = (value: unknown): string => {
-        const text = String(value || '');
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
-        const [year, month, day] = text.split('-').map(Number);
+        const text = String(value ?? '').trim();
+        const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!match) return '';
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
         return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
           'en-GB',
           {
@@ -1032,6 +1035,7 @@ export default function Interactions(): null {
       }): string => {
         const totals = invoiceTotals(data.line_items, Number(data.amount_paid || 0));
         const status = invoicePaymentStatusPrint[totals.status];
+        const dueDate = formatInvoiceDate(data.due_date);
         const rows = data.line_items.length
           ? data.line_items
               .map(
@@ -1041,15 +1045,15 @@ export default function Interactions(): null {
               .join('')
           : '<tr><td colspan="5">Add a service line to this invoice.</td></tr>';
         return `<div class="invoice-doc">
-          <header class="invoice-brand"><img src="/assets/eduro-logo.png" alt="Eudora Movement House"><h1>Invoice</h1></header>
+          <header class="invoice-brand"><img src="/assets/eudora%20defined%20logo.png" alt="Eudora Movement House"><p class="invoice-title">Invoice</p></header>
           <div class="invoice-meta">
             <p><span>Invoice number</span><strong>${esc(data.invoice_number || 'Assigned on save')}</strong></p>
             <p><span>Invoice date</span><strong>${esc(formatInvoiceDate(data.invoice_date))}</strong></p>
-            <p><span>Due date</span><strong>${esc(formatInvoiceDate(data.due_date))}</strong></p>
+            ${dueDate ? `<p><span>Due date</span><strong>${esc(dueDate)}</strong></p>` : ''}
             <p><span>Payment status</span><strong class="invoice-status" data-status="${esc(totals.status)}">${esc(status)}</strong></p>
           </div>
           <div class="invoice-parties">
-            <section><h2>From</h2><p><strong>Eudora Movement House</strong><br>Varshini Balamurugan, MPT<br>connect@eudoraphysio.com | Bengaluru</p></section>
+            <section><h2>From</h2><p><strong>Eudora Movement House</strong><br>Varshini Balamurugan PT, MIAP<br>connect@eudoraphysio.com | Bengaluru</p></section>
             <section><h2>Bill to</h2><p><strong>${esc(data.bill_to_name || 'Client / Patient name')}</strong><br>${esc(data.bill_to_phone || 'Phone number')}<br>${esc(data.bill_to_location || 'Location')}</p></section>
           </div>
           <table class="invoice-lines">
@@ -1097,6 +1101,7 @@ export default function Interactions(): null {
         printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>${styles}<style>
           body { background: #fff; margin: 0; padding: 14mm; }
           .invoice-preview, .invoice-doc { border: 0 !important; width: 100% !important; max-width: none !important; padding: 0 !important; box-shadow: none !important; }
+          .invoice-brand .invoice-title { font-size: 13px !important; margin: 0 !important; }
           @page { size: A4; margin: 12mm; }
         </style></head><body>${inner}</body></html>`);
         printWindow.document.close();
@@ -1539,7 +1544,7 @@ export default function Interactions(): null {
           const consultDate = formatConsultDate(data.date);
 
           chart.innerHTML = `<div class="exercise-doc">
-            <div class="exercise-doc-brand"><img src="/assets/eduro-logo.png" alt="Eudora Movement House"></div>
+            <div class="exercise-doc-brand"><img src="/assets/eudora%20defined%20logo.png" alt="Eudora Movement House"></div>
             <h2 class="exercise-doc-title">Your movement plan</h2>
             <p class="exercise-doc-meta"><span>${esc(consultDate)}</span><span>Varshini Balamurugan, MPT, BPT</span></p>
             <h3 class="exercise-doc-name">${esc(data.patient || 'Patient name')}</h3>
@@ -1555,7 +1560,7 @@ export default function Interactions(): null {
         chart.innerHTML = `<div class="summary-doc">
           <div class="summary-page-one">
           <header class="summary-letterhead">
-            <div class="summary-letterhead-brand"><img src="/assets/eduro-logo.png" alt="Eudora Movement House"></div>
+            <div class="summary-letterhead-brand"><img src="/assets/eudora%20defined%20logo.png" alt="Eudora Movement House"></div>
             <h2 class="summary-letterhead-title">Consultation summary</h2>
             <p class="summary-letterhead-clinician"><strong>Varshini Balamurugan PT, MIAP</strong><span>Musculoskeletal physiotherapist</span></p>
           </header>
