@@ -21,6 +21,7 @@ import {
   updatePatient,
   normalizePhone,
 } from './supabase';
+import { isAppointmentStatus } from './appointment-status';
 import { sendAppointmentConfirmation } from './twilio';
 
 type ValidationError = { error: string };
@@ -776,18 +777,10 @@ export function createApi(
               const time = clean(input.time);
 
               if (status) {
-                if (
-                  ![
-                    'PENDING',
-                    'CONFIRMED',
-                    'COMPLETED',
-                    'CANCELLED',
-                    'NO_SHOW',
-                  ].includes(status)
-                ) {
+                if (!isAppointmentStatus(status)) {
                   return json(400, { error: 'Please choose a valid status.' });
                 }
-                const result = await updateAppointmentStatus(id, status as any);
+                const result = await updateAppointmentStatus(id, status);
                 if (result.error) {
                   return json(500, { error: result.error });
                 }

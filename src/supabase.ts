@@ -1,4 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
+import {
+  type AppointmentStatus,
+  appointmentStatuses,
+  appointmentStatusLabels,
+  isAppointmentStatus,
+  isFinalAppointmentStatus,
+} from './appointment-status';
+
+export {
+  type AppointmentStatus,
+  appointmentStatuses,
+  appointmentStatusLabels,
+  isAppointmentStatus,
+  isFinalAppointmentStatus,
+};
 
 export interface PatientInput {
   full_name: string;
@@ -38,19 +53,6 @@ interface AppointmentUpdate {
   whatsapp_message_id?: string;
   whatsapp_error?: string;
 }
-
-type AppointmentStatus =
-  | 'PENDING'
-  | 'CONFIRMED'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'NO_SHOW';
-
-const finalAppointmentStatuses = new Set([
-  'COMPLETED',
-  'CANCELLED',
-  'NO_SHOW',
-]);
 
 interface FeedbackInsert {
   rating: number;
@@ -372,7 +374,7 @@ export async function updateAppointmentStatus(
     if (lookupError) {
       return { success: false, error: lookupError.message };
     }
-    if (finalAppointmentStatuses.has(String(existing?.status || ''))) {
+    if (isFinalAppointmentStatus(String(existing?.status || ''))) {
       return {
         success: false,
         error: 'This appointment is already final and cannot be changed.',
@@ -409,7 +411,7 @@ export async function updateAppointmentDetails(
     if (lookupError) {
       return { success: false, error: lookupError.message };
     }
-    if (finalAppointmentStatuses.has(String(existing?.status || ''))) {
+    if (isFinalAppointmentStatus(String(existing?.status || ''))) {
       return {
         success: false,
         error: 'This appointment is already final and cannot be changed.',

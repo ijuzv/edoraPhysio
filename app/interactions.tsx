@@ -1,11 +1,44 @@
 'use client';
 
 import { useEffect } from 'react';
+import {
+  appointmentStatuses,
+  appointmentStatusLabels,
+  isFinalAppointmentStatus,
+} from '../src/appointment-status';
 
 interface FormState {
   fingerprint: string;
   key: string;
 }
+
+const summaryDos = [
+  'Follow the exercise dose, technique and activity plan agreed with your physiotherapist.',
+  'Stay gently active within your advised limits. Build activity gradually rather than waiting for all discomfort to disappear.',
+  'Use pacing: break demanding tasks into shorter periods, change position regularly and allow planned recovery time.',
+  'Tell your physiotherapist about new symptoms, falls, illness, pregnancy, medication changes, surgery or changes in your medical condition.',
+  'Use supportive footwear and a clear, stable exercise area. Keep a chair or wall nearby if balance support was advised.',
+  'Expect that mild, short-lived muscle soreness can occur after unfamiliar exercise. Record the response and discuss symptoms that are strong, worsening or prolonged.',
+  'Use heat or cold only if advised and comfortable: wrap the pack, check the skin often and keep sessions brief.',
+  'Take prescribed medicines exactly as directed by your doctor and keep scheduled medical and physiotherapy reviews.',
+];
+
+const summaryDonts = [
+  'Do not increase resistance, repetitions, stretching force or treatment frequency on your own.',
+  'Do not push through sharp, severe or rapidly increasing pain, new weakness, new numbness or loss of coordination.',
+  'Do not perform self-manipulation, forceful neck or back movements, or copy exercises that were not assessed for you.',
+  'Do not stay in one position for long periods when regular movement has been advised. There is no single “perfect posture”; comfort and position changes matter.',
+  'Do not place heat or ice directly on the skin, use it over areas with poor sensation or circulation, or fall asleep with a pack in place.',
+  'Do not exercise when acutely unwell, feverish or unusually breathless. Seek advice before restarting.',
+  'Do not stop, start or change prescribed medication or post-surgical precautions without the relevant medical professional.',
+  'Do not miss repeated sessions without discussing barriers; the plan can often be adjusted safely.',
+];
+
+const summaryUrgent =
+  'chest pressure or pain; severe or unusual shortness of breath; fainting; sudden severe headache; new facial droop, speech difficulty or one-sided weakness; sudden loss of balance or coordination; new loss of bladder or bowel control; numbness around the groin or saddle area; or rapidly worsening weakness.';
+
+const summaryEvidence =
+  'WHO Guidelines on Physical Activity and Sedentary Behaviour (2020); NICE NG59 Low Back Pain and Sciatica (updated 2020); George et al., JOSPT Clinical Practice Guideline for Acute and Chronic Low Back Pain (2021); ACSM Guidelines for Exercise Testing and Prescription, 12th ed. (2025); American Heart Association warning signs for heart attack and stroke.';
 
 export default function Interactions(): null {
   useEffect(() => {
@@ -770,11 +803,12 @@ export default function Interactions(): null {
         const result = await api('/api/practitioner/appointments?' + q);
         adminState.appointments = result.data || [];
         const target = container.querySelector('[data-list=appointments]') as HTMLElement;
-        const statuses = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
-        const finalStatuses = new Set(['COMPLETED', 'CANCELLED', 'NO_SHOW']);
+        const statuses = appointmentStatuses;
         target.innerHTML = `<table><thead><tr><th>Patient</th><th>Phone</th><th>Type</th><th>Preferred</th><th>Status</th></tr></thead><tbody>${adminState.appointments.map((x) => {
           const currentStatus = String(x.status || '').toUpperCase();
-          return `<tr class="${x.is_active === false ? 'is-inactive' : ''}"><td><strong>${esc(x.patient_name)}</strong>${x.is_active === false ? '<span class="admin-chip muted-chip">Inactive</span>' : ''}</td><td>${esc(x.patient_phone)}</td><td><span class="admin-chip">${esc(x.consultation_type)}</span></td><td>${esc(x.preferred_date)}<br><span class="muted">${esc(x.preferred_time)}</span></td><td><select class="status-select" data-status="${esc(currentStatus)}" data-appointment-status="${esc(x.id)}" ${finalStatuses.has(currentStatus) || x.is_active === false ? 'disabled title="Final status cannot be changed"' : ''}>${statuses.map((status) => `<option value="${esc(status)}" ${currentStatus === status ? 'selected' : ''}>${esc(status)}</option>`).join('')}</select></td><td><button type="button" data-edit-appointment="${esc(x.id)}" ${finalStatuses.has(currentStatus) || x.is_active === false ? 'disabled' : ''}>Edit</button></td></tr>`;
+          const locked =
+            isFinalAppointmentStatus(currentStatus) || x.is_active === false;
+          return `<tr class="${x.is_active === false ? 'is-inactive' : ''}"><td><strong>${esc(x.patient_name)}</strong>${x.is_active === false ? '<span class="admin-chip muted-chip">Inactive</span>' : ''}</td><td>${esc(x.patient_phone)}</td><td><span class="admin-chip">${esc(x.consultation_type)}</span></td><td>${esc(x.preferred_date)}<br><span class="muted">${esc(x.preferred_time)}</span></td><td><select class="status-select" data-status="${esc(currentStatus)}" data-appointment-status="${esc(x.id)}" ${locked ? 'disabled title="Final status cannot be changed"' : ''}>${statuses.map((status) => `<option value="${esc(status)}" ${currentStatus === status ? 'selected' : ''}>${esc(appointmentStatusLabels[status])}</option>`).join('')}</select></td><td><button type="button" data-edit-appointment="${esc(x.id)}" ${locked ? 'disabled' : ''}>Edit</button></td></tr>`;
         }).join('')}</tbody></table>`;
         renderPager(target, result.count || 0, page, loadAppointments);
       };
@@ -1035,38 +1069,172 @@ export default function Interactions(): null {
         };
       };
 
+      const exerciseList = form.querySelector(
+        '[data-exercise-list]',
+      ) as HTMLElement | null;
+      let exerciseSeq = 0;
+
+      const numberExerciseRows = (): void => {
+        if (!exerciseList) return;
+        const rows = [...exerciseList.querySelectorAll('.exercise-row')];
+        for (const [index, row] of rows.entries()) {
+          const number = row.querySelector('.exercise-number');
+          if (number) number.textContent = String(index + 1);
+          const remove = row.querySelector(
+            '.remove-exercise',
+          ) as HTMLButtonElement | null;
+          if (remove) remove.disabled = rows.length === 1;
+        }
+      };
+
+      const addExerciseRow = (focus = false): void => {
+        if (!exerciseList) return;
+        exerciseSeq += 1;
+        const id = `ex-${exerciseSeq}`;
+        exerciseList.insertAdjacentHTML(
+          'beforeend',
+          `<div class="exercise-row">
+            <p class="exercise-row-heading"><span>Exercise <span class="exercise-number"></span></span><button type="button" class="remove-exercise">Remove</button></p>
+            <label>Exercise name<input id="${id}-name" name="exercise_name" maxlength="120" placeholder="Name of the prescribed exercise"></label>
+            <label>Dosage and instructions<textarea id="${id}-dose" name="exercise_dose" rows="2" maxlength="800" placeholder="Repetitions, sets, frequency, technique and any precautions."></textarea></label>
+          </div>`,
+        );
+        numberExerciseRows();
+        if (focus) {
+          (
+            exerciseList.querySelector(
+              `#${id}-name`,
+            ) as HTMLInputElement | null
+          )?.focus();
+        }
+      };
+
+      const readExercises = (): Array<{ name: string; dose: string }> => {
+        if (!exerciseList) return [];
+        return [...exerciseList.querySelectorAll('.exercise-row')]
+          .map((row) => ({
+            name: (
+              row.querySelector(
+                '[name=exercise_name]',
+              ) as HTMLInputElement | null
+            )?.value.trim() || '',
+            dose: (
+              row.querySelector(
+                '[name=exercise_dose]',
+              ) as HTMLTextAreaElement | null
+            )?.value.trim() || '',
+          }))
+          .filter((exercise) => exercise.name);
+      };
+
+      if (exerciseList && exerciseList.children.length === 0) {
+        addExerciseRow();
+      }
+
+      listen(form, 'click', (event) => {
+        const target = event.target as HTMLElement;
+        if (target.closest('.add-exercise')) {
+          addExerciseRow(true);
+          render();
+          return;
+        }
+        const remove = target.closest('.remove-exercise') as HTMLButtonElement | null;
+        if (!remove || remove.disabled) return;
+        remove.closest('.exercise-row')?.remove();
+        numberExerciseRows();
+        render();
+      });
+
+      const formatConsultDate = (value: unknown): string => {
+        const text = String(value || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+        const [year, month, day] = text.split('-').map(Number);
+        return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
+          'en-GB',
+          {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            timeZone: 'UTC',
+          },
+        );
+      };
+
+      const markedList = (items: string[], marker: string): string =>
+        `<ul>${items
+          .map(
+            (item) =>
+              `<li><span aria-hidden="true">${marker}</span><span>${esc(item)}</span></li>`,
+          )
+          .join('')}</ul>`;
+
       const render = (): void => {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData) as Record<string, unknown>;
-        const chosen = [
-          ...form.querySelectorAll('[name=exercise]:checked'),
-        ].map((x) => (x as HTMLInputElement).value);
 
-        const modeContent =
-          mode === 'exercise'
-            ? `<ol>${chosen
-                .map((x) => `<li><h3>${esc(x)}</h3></li>`)
-                .join(
-                  '',
-                )}</ol><h3>Individual instructions</h3><p style="white-space:pre-wrap">${esc(
-                data.instructions ||
-                  'Add the prescribed dosage, frequency and individual guidance before sharing.',
-              )}</p>`
-            : `<dl><dt>Reason for consultation</dt><dd>${esc(
-                data.reason || '—',
-              )}</dd><dt>Assessment / findings</dt><dd>${esc(
-                data.findings || '—',
-              )}</dd><dt>Plan and advice</dt><dd>${esc(
-                data.plan || '—',
-              )}</dd><dt>Follow-up</dt><dd>${esc(
-                data.followup || '—',
-              )}</dd></dl>`;
+        if (mode === 'exercise') {
+          const exercises = readExercises();
+          const exerciseMarkup = exercises.length
+            ? `<ol class="exercise-plan">${exercises
+                .map(
+                  (exercise) =>
+                    `<li><h3>${esc(exercise.name)}</h3>${
+                      exercise.dose
+                        ? `<p>${esc(exercise.dose)}</p>`
+                        : ''
+                    }</li>`,
+                )
+                .join('')}</ol>`
+            : '<p>Add the exercises prescribed for this visit.</p>';
+          const precautions = String(data.instructions || '').trim();
+          const consultDate = formatConsultDate(data.date);
 
-        chart.innerHTML = `<div class="brand"><img src="/assets/eduro-logo.png" alt="Eudora Movement House"></div><p class="eyebrow">${
-          mode === 'exercise' ? 'Your movement plan' : 'Consultation summary'
-        }</p><h2>${esc(data.patient || 'Patient name')}</h2><p>${esc(
-          data.date || '',
-        )} · Varshini Balamurugan, MPT, BPT</p>${modeContent}<p class="chart-footer">Prepared by your physiotherapist for your individual care.<br>Eudora Movement House · +91 74181 58876</p>`;
+          chart.innerHTML = `<div class="brand"><img src="/assets/eduro-logo.png" alt="Eudora Movement House"></div><p class="eyebrow">Your movement plan</p><h2>${esc(
+            data.patient || 'Patient name',
+          )}</h2><p>${esc(consultDate)}${
+            consultDate ? ' · ' : ''
+          }Varshini Balamurugan, MPT, BPT</p>${exerciseMarkup}${
+            precautions
+              ? `<h3>General precautions</h3><p style="white-space:pre-wrap">${esc(precautions)}</p>`
+              : ''
+          }<p class="chart-footer">Prepared by your physiotherapist for your individual care.<br>Eudora Movement House · +91 74181 58876</p>`;
+          return;
+        }
+
+        chart.innerHTML = `<div class="summary-doc">
+          <header class="summary-letterhead">
+            <div class="summary-letterhead-brand"><img src="/assets/eduro-logo.png" alt="Eudora Movement House"></div>
+            <h2 class="summary-letterhead-title">Consultation summary</h2>
+            <p class="summary-letterhead-clinician"><strong>Varshini Balamurugan PT</strong><span>Musculoskeletal Physiotherapist</span><span>MPT · MIAP</span></p>
+          </header>
+          <ol class="summary-fields">
+            <li><strong>Name</strong><p class="summary-line">${esc(data.patient || '')}</p></li>
+            <li><strong>Date of Consultation</strong><p class="summary-line">${esc(formatConsultDate(data.date))}</p></li>
+            <li><strong>Summary</strong><p class="summary-block">${esc(data.summary || '')}</p></li>
+            <li><strong>Plan of action</strong><p class="summary-block">${esc(data.plan || '')}</p></li>
+            <li><strong>Sign</strong><div class="summary-sign"><p class="summary-sign-name">${esc(data.sign || '')}</p></div></li>
+            <li>
+              <strong>Dos and Don'ts</strong>
+              <div class="summary-guidance-grid">
+                <section>
+                  <h3>Do</h3>
+                  ${markedList(summaryDos, '✓')}
+                </section>
+                <section>
+                  <h3>Do Not</h3>
+                  ${markedList(summaryDonts, '×')}
+                </section>
+              </div>
+              <aside class="summary-urgent">
+                <h3><span aria-hidden="true">!</span> Stop activity and seek urgent medical care for</h3>
+                <p>${esc(summaryUrgent)}</p>
+              </aside>
+              <p class="summary-note"><strong>Important</strong> This guidance is general and does not replace your individual physiotherapy plan, medical advice or emergency care.</p>
+              <p class="summary-note"><strong>Evidence base</strong> ${esc(summaryEvidence)}</p>
+            </li>
+          </ol>
+          <p class="chart-footer">Prepared by your physiotherapist for your individual care.<br>Eudora Movement House · +91 74181 58876</p>
+        </div>`;
       };
 
       listen(form, 'input', render);
@@ -1394,9 +1562,9 @@ export default function Interactions(): null {
         const row = adminState.appointments.find((x) => x.id === appointmentId);
         const previousStatus = String(row?.status || '').toUpperCase();
         if (
-          ['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(target.value) &&
+          isFinalAppointmentStatus(target.value) &&
           !confirm(
-            `${target.value} is final. You will not be able to change this appointment status again. Continue?`,
+            `${appointmentStatusLabels[target.value as keyof typeof appointmentStatusLabels] || target.value} is final. You will not be able to change this appointment status again. Continue?`,
           )
         ) {
           target.value = previousStatus;
@@ -1411,7 +1579,7 @@ export default function Interactions(): null {
           });
           if (row) row.status = target.value;
           target.dataset.status = target.value;
-          if (['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(target.value)) {
+          if (isFinalAppointmentStatus(target.value)) {
             target.disabled = true;
             target.title = 'Final status cannot be changed';
           }
@@ -1419,7 +1587,7 @@ export default function Interactions(): null {
           target.value = previousStatus;
           alert((error as Error).message);
         } finally {
-          if (!['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(target.value)) {
+          if (!isFinalAppointmentStatus(target.value)) {
             target.disabled = false;
           }
           target.removeAttribute('aria-busy');
@@ -1519,6 +1687,19 @@ export default function Interactions(): null {
           return;
         }
 
+        if (mode === 'exercise' && readExercises().length === 0) {
+          const firstName = form.querySelector(
+            '[name=exercise_name]',
+          ) as HTMLInputElement | null;
+          firstName?.setCustomValidity(
+            'Add at least one exercise before printing.',
+          );
+          firstName?.reportValidity();
+          firstName?.setCustomValidity('');
+          firstName?.focus();
+          return;
+        }
+
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
           window.print();
@@ -1534,7 +1715,10 @@ export default function Interactions(): null {
           body { background: #fff; margin: 0; padding: 18mm; }
           .chart-preview { border: 0 !important; width: 100% !important; max-width: none !important; padding: 0 !important; }
           .chart-preview h2 { font-size: 30px; }
+          .chart-preview .summary-letterhead-title { font-size: 22px; }
           .chart-preview p, .chart-preview li { font-size: 12px; }
+          .summary-guidance-grid { grid-template-columns: 1fr 1fr; }
+          .summary-block { min-height: 64px; }
           @page { size: A4; margin: 15mm; }
         </style></head><body><article class="chart-preview">${chart.innerHTML}</article></body></html>`);
         printWindow.document.close();

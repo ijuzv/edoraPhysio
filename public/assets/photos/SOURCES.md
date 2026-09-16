@@ -31,3 +31,4 @@ Reference page: https://www.pexels.com/photo/physiotherapist-helping-patient-to-
 | care-22.jpg | https://images.pexels.com/photos/20860586/pexels-photo-20860586.jpeg |
 | care-23.jpg | https://images.pexels.com/photos/20860588/pexels-photo-20860588.jpeg |
 | care-24.jpg | https://images.pexels.com/photos/20860591/pexels-photo-20860591.jpeg |
+| care-musculoskeletal.jpg | Client-provided photo (WhatsApp, 2026-09-15); used for Musculoskeletal care |

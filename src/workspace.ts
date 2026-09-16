@@ -1,3 +1,12 @@
+import { appointmentStatuses, appointmentStatusLabels } from './appointment-status';
+
+const appointmentStatusOptions = appointmentStatuses
+  .map(
+    (status) =>
+      `<option value="${status}">${appointmentStatusLabels[status]}</option>`,
+  )
+  .join('');
+
 export const workspaceHtml = `
   <div class="workspace-heading">
     <div>
@@ -19,7 +28,7 @@ export const workspaceHtml = `
     <div class="admin-toolbar">
       <input name="appointment-search" placeholder="Search appointments">
       <select name="appointment-type"><option value="">All types</option><option value="home">Home visit</option><option value="online">Online</option></select>
-      <select name="appointment-status"><option value="">All statuses</option><option>PENDING</option><option>CONFIRMED</option><option>COMPLETED</option><option>CANCELLED</option><option>NO_SHOW</option></select>
+      <select name="appointment-status"><option value="">All statuses</option>${appointmentStatusOptions}</select>
       <select name="appointment-active"><option value="">Active</option><option value="inactive">Inactive</option><option value="all">All</option></select>
       <button type="button" class="button-light export-appointments">Export filtered</button>
     </div>
@@ -148,22 +157,21 @@ export const workspaceHtml = `
 
   <section class="tool-grid" data-panel="documents" hidden>
     <form id="tool-form" class="tool-form">
-      <label>Patient name<input name="patient" required maxlength="100" autocomplete="off"></label>
-      <label>Consultation date<input name="date" type="date"></label>
+      <label>Name<input name="patient" required maxlength="100" autocomplete="off"></label>
+      <label>Date of consultation<input name="date" type="date"></label>
       <fieldset id="exercise-fields">
         <legend>Exercise chart</legend>
-        <p class="small">Select only exercises you have individually assessed and prescribed. Add dosage and precautions below.</p>
-        <div class="exercise-options">
-          <label><input name="exercise" type="checkbox" value="Ankle pumps">Ankle pumps</label><label><input name="exercise" type="checkbox" value="Heel slides">Heel slides</label><label><input name="exercise" type="checkbox" value="Sit to stand">Sit to stand</label><label><input name="exercise" type="checkbox" value="Heel raises">Heel raises</label><label><input name="exercise" type="checkbox" value="Shoulder flexion">Shoulder flexion</label><label><input name="exercise" type="checkbox" value="Scapular retraction">Scapular retraction</label><label><input name="exercise" type="checkbox" value="Calf stretch">Calf stretch</label><label><input name="exercise" type="checkbox" value="Hamstring stretch">Hamstring stretch</label>
-        </div>
-        <label>Individual instructions, dosage and precautions<textarea name="instructions" rows="8" maxlength="5000" placeholder="Include exercise-specific repetitions, sets, frequency and any precautions. Add other prescribed exercises here."></textarea></label>
+        <p class="small">Add each exercise prescribed for this visit. Only this list is printed.</p>
+        <div class="exercise-list" data-exercise-list></div>
+        <button type="button" class="button button-light add-exercise">Add exercise <span aria-hidden="true">+</span></button>
+        <label>General precautions<textarea name="instructions" rows="3" maxlength="2000" placeholder="Optional notes that apply to the whole programme."></textarea></label>
       </fieldset>
       <fieldset id="summary-fields" hidden>
         <legend>Consultation summary</legend>
-        <label>Reason for consultation<textarea name="reason" rows="3" maxlength="2000"></textarea></label>
-        <label>Assessment / findings<textarea name="findings" rows="4" maxlength="4000"></textarea></label>
-        <label>Plan and advice<textarea name="plan" rows="4" maxlength="4000"></textarea></label>
-        <label>Follow-up<textarea name="followup" rows="2" maxlength="1000"></textarea></label>
+        <label>Summary<textarea name="summary" rows="8" maxlength="4000" placeholder="Key findings, clinical impression and discussion from this consultation."></textarea></label>
+        <label>Plan of action<textarea name="plan" rows="6" maxlength="4000" placeholder="Treatment, home programme, reviews and next steps."></textarea></label>
+        <label>Sign<input name="sign" maxlength="120" placeholder="Varshini Balamurugan PT"></label>
+        <p class="small">Dos and Don'ts, urgent-care guidance and evidence notes are included automatically on the document.</p>
       </fieldset>
       <button class="button print-button" type="button">Download PDF <span aria-hidden="true">↗</span></button>
     </form>
