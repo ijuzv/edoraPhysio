@@ -81,9 +81,24 @@ test('invoice validation requires a billed person, date and service line', () =>
     ],
   };
   assert.ok(validateInvoice(validInvoice).data);
+  assert.ok(
+    validateInvoice({
+      ...validInvoice,
+      from_date: '2026-09-16',
+      to_date: '',
+    }).data,
+  );
+  assert.ok(validateInvoice({ ...validInvoice, from_date: '', to_date: '' }).data);
   assert.ok(validateInvoice({ ...validInvoice, line_items: [] }).error);
   assert.ok(validateInvoice({ ...validInvoice, bill_to_name: 'A' }).error);
   assert.ok(validateInvoice({ ...validInvoice, due_date: '2026-09-01' }).error);
+  assert.ok(
+    validateInvoice({
+      ...validInvoice,
+      from_date: '2026-09-16',
+      to_date: '2026-09-01',
+    }).error,
+  );
 });
 test('unconfigured forms never report false success; cross-origin requests are rejected', async () => {
   const f = await fixture();

@@ -451,6 +451,8 @@ export function validateInvoice(
   patient_id: string | null;
   invoice_date: string;
   due_date: string | null;
+  from_date: string | null;
+  to_date: string | null;
   bill_to_name: string;
   bill_to_phone: string;
   bill_to_location: string | null;
@@ -462,6 +464,8 @@ export function validateInvoice(
   const phone = clean(input.bill_to_phone);
   const invoiceDate = clean(input.invoice_date);
   const dueDate = clean(input.due_date);
+  const fromDate = clean(input.from_date);
+  const toDate = clean(input.to_date);
   const patientId = clean(input.patient_id);
   const location = clean(input.bill_to_location);
   const notes = clean(input.notes);
@@ -484,6 +488,15 @@ export function validateInvoice(
   }
   if (dueDate && dueDate < invoiceDate) {
     return { error: 'Due date cannot be earlier than the invoice date.' };
+  }
+  if (fromDate && !isIsoDate(fromDate)) {
+    return { error: 'Please enter a valid from date.' };
+  }
+  if (toDate && !isIsoDate(toDate)) {
+    return { error: 'Please enter a valid to date.' };
+  }
+  if (fromDate && toDate && toDate < fromDate) {
+    return { error: 'To date cannot be earlier than the from date.' };
   }
   if (patientId && !isUuid(patientId)) {
     return { error: 'Please choose a valid patient.' };
@@ -539,6 +552,8 @@ export function validateInvoice(
       patient_id: patientId || null,
       invoice_date: invoiceDate,
       due_date: dueDate || null,
+      from_date: fromDate || null,
+      to_date: toDate || null,
       bill_to_name: billToName,
       bill_to_phone: phone,
       bill_to_location: location || null,

@@ -614,6 +614,8 @@ export default function Interactions(): null {
         invoice_number: invoice.invoice_number,
         invoice_date: invoice.invoice_date,
         due_date: invoice.due_date,
+        from_date: invoice.from_date,
+        to_date: invoice.to_date,
         bill_to_name: invoice.bill_to_name,
         bill_to_phone: invoice.bill_to_phone,
         bill_to_location: invoice.bill_to_location,
@@ -628,6 +630,8 @@ export default function Interactions(): null {
         'invoice_number',
         'invoice_date',
         'due_date',
+        'from_date',
+        'to_date',
         'bill_to_name',
         'bill_to_phone',
         'bill_to_location',
@@ -1026,6 +1030,8 @@ export default function Interactions(): null {
         invoice_number?: string;
         invoice_date?: string;
         due_date?: string;
+        from_date?: string;
+        to_date?: string;
         bill_to_name?: string;
         bill_to_phone?: string;
         bill_to_location?: string;
@@ -1036,6 +1042,8 @@ export default function Interactions(): null {
         const totals = invoiceTotals(data.line_items, Number(data.amount_paid || 0));
         const status = invoicePaymentStatusPrint[totals.status];
         const dueDate = formatInvoiceDate(data.due_date);
+        const fromDate = formatInvoiceDate(data.from_date);
+        const toDate = formatInvoiceDate(data.to_date);
         const rows = data.line_items.length
           ? data.line_items
               .map(
@@ -1047,10 +1055,11 @@ export default function Interactions(): null {
         return `<div class="invoice-doc">
           <header class="invoice-brand"><img src="/assets/eudora%20defined%20logo.png" alt="Eudora Movement House"><p class="invoice-title">Invoice</p></header>
           <div class="invoice-meta">
-            <p><span>Invoice number</span><strong>${esc(data.invoice_number || 'Assigned on save')}</strong></p>
-            <p><span>Invoice date</span><strong>${esc(formatInvoiceDate(data.invoice_date))}</strong></p>
-            ${dueDate ? `<p><span>Due date</span><strong>${esc(dueDate)}</strong></p>` : ''}
-            <p><span>Payment status</span><strong class="invoice-status" data-status="${esc(totals.status)}">${esc(status)}</strong></p>
+            <p class="invoice-meta-number"><span>Invoice number</span><strong>${esc(data.invoice_number || 'Assigned on save')}</strong></p>
+            <p class="invoice-meta-date"><span>Invoice date</span><strong>${esc(formatInvoiceDate(data.invoice_date))}</strong></p>
+            <p class="invoice-meta-status"><span>Payment status</span><strong class="invoice-status" data-status="${esc(totals.status)}">${esc(status)}</strong></p>
+            <p class="invoice-period-meta">${fromDate || toDate ? `<span>From</span><strong>${esc(fromDate || '—')}</strong><span>To</span><strong>${esc(toDate || '—')}</strong>` : ''}</p>
+            ${dueDate ? `<p class="invoice-meta-due"><span>Due date</span><strong>${esc(dueDate)}</strong></p>` : ''}
           </div>
           <div class="invoice-parties">
             <section><h2>From</h2><p><strong>Eudora Movement House</strong><br>Varshini Balamurugan PT, MIAP<br>connect@eudoraphysio.com | Bengaluru</p></section>
@@ -1073,6 +1082,8 @@ export default function Interactions(): null {
         invoice_number: invoiceValue('invoice_number'),
         invoice_date: invoiceValue('invoice_date'),
         due_date: invoiceValue('due_date'),
+        from_date: invoiceValue('from_date'),
+        to_date: invoiceValue('to_date'),
         bill_to_name: invoiceValue('bill_to_name'),
         bill_to_phone: invoiceValue('bill_to_phone'),
         bill_to_location: invoiceValue('bill_to_location'),
@@ -1082,6 +1093,14 @@ export default function Interactions(): null {
       });
 
       const renderInvoicePreview = (): void => {
+        const fromField = invoiceForm?.querySelector(
+          '[name="from_date"]',
+        ) as HTMLInputElement | null;
+        const toField = invoiceForm?.querySelector(
+          '[name="to_date"]',
+        ) as HTMLInputElement | null;
+        if (fromField) fromField.max = invoiceValue('to_date');
+        if (toField) toField.min = invoiceValue('from_date');
         if (!invoicePreview) return;
         numberInvoiceItems();
         invoicePreview.innerHTML = invoiceDocumentHtml(currentInvoiceData());
@@ -1166,7 +1185,11 @@ export default function Interactions(): null {
         target.innerHTML = `<table><thead><tr><th>Invoice</th><th>Bill to</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>${adminState.invoices
           .map((x) => {
             const status = String(x.payment_status || 'PAYMENT_DUE') as InvoicePaymentStatus;
-            return `<tr class="${x.is_active === false ? 'is-inactive' : ''}"><td><strong>${esc(x.invoice_number)}</strong>${x.is_active === false ? '<span class="admin-chip muted-chip">Inactive</span>' : ''}</td><td>${esc(x.bill_to_name)}<br><span class="muted">${esc(x.bill_to_phone || '')}</span></td><td>${esc(x.invoice_date || '')}</td><td>${esc(formatMoney(Number(x.total_amount || 0)))}</td><td><span class="admin-chip invoice-status-chip" data-status="${esc(status)}">${esc(invoicePaymentStatusLabels[status] || status)}</span></td><td><button type="button" data-edit-invoice="${esc(x.id)}" ${x.is_active === false ? 'disabled' : ''}>Edit</button><button type="button" data-download-invoice="${esc(x.id)}">Download</button><button type="button" data-delete-invoice="${esc(x.id)}" ${x.is_active === false ? 'disabled' : ''}>Make inactive</button></td></tr>`;
+            const period =
+              x.from_date || x.to_date
+                ? `<br><span class="muted">${esc([x.from_date, x.to_date].filter(Boolean).join(' – '))}</span>`
+                : '';
+            return `<tr class="${x.is_active === false ? 'is-inactive' : ''}"><td><strong>${esc(x.invoice_number)}</strong>${x.is_active === false ? '<span class="admin-chip muted-chip">Inactive</span>' : ''}</td><td>${esc(x.bill_to_name)}<br><span class="muted">${esc(x.bill_to_phone || '')}</span></td><td>${esc(x.invoice_date || '')}${period}</td><td>${esc(formatMoney(Number(x.total_amount || 0)))}</td><td><span class="admin-chip invoice-status-chip" data-status="${esc(status)}">${esc(invoicePaymentStatusLabels[status] || status)}</span></td><td><button type="button" data-edit-invoice="${esc(x.id)}" ${x.is_active === false ? 'disabled' : ''}>Edit</button><button type="button" data-download-invoice="${esc(x.id)}">Download</button><button type="button" data-delete-invoice="${esc(x.id)}" ${x.is_active === false ? 'disabled' : ''}>Make inactive</button></td></tr>`;
           })
           .join('')}</tbody></table>`;
         renderPager(target, result.count || 0, page, loadInvoices);
@@ -1191,6 +1214,8 @@ export default function Interactions(): null {
         set('invoice_patient_id', record?.patient_id || '');
         set('invoice_date', record?.invoice_date || todayIso());
         set('due_date', record?.due_date || '');
+        set('from_date', record?.from_date || '');
+        set('to_date', record?.to_date || '');
         set('bill_to_name', record?.bill_to_name || '');
         set('bill_to_phone', record?.bill_to_phone || '');
         set('bill_to_location', record?.bill_to_location || '');
@@ -1795,6 +1820,8 @@ export default function Interactions(): null {
         patient_id: invoiceValue('invoice_patient_id') || null,
         invoice_date: invoiceValue('invoice_date'),
         due_date: invoiceValue('due_date') || null,
+        from_date: invoiceValue('from_date') || null,
+        to_date: invoiceValue('to_date') || null,
         bill_to_name: invoiceValue('bill_to_name'),
         bill_to_phone: invoiceValue('bill_to_phone'),
         bill_to_location: invoiceValue('bill_to_location'),
@@ -2035,6 +2062,8 @@ export default function Interactions(): null {
                 invoice_number: row.invoice_number,
                 invoice_date: row.invoice_date,
                 due_date: row.due_date,
+                from_date: row.from_date,
+                to_date: row.to_date,
                 bill_to_name: row.bill_to_name,
                 bill_to_phone: row.bill_to_phone,
                 bill_to_location: row.bill_to_location,

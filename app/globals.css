@@ -1935,6 +1935,16 @@ input[type="checkbox"] {
   max-width: none;
   margin-top: 0;
 }
+.invoice-period.full {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+  gap: 18px 22px;
+}
+.invoice-period.full label {
+  min-width: 0;
+}
 .add-invoice-item {
   margin: 8px 0 22px;
   min-height: 44px;
@@ -2006,6 +2016,27 @@ input[type="checkbox"] {
   margin-bottom: 16px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--line);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.invoice-meta-number {
+  grid-column: 1;
+  grid-row: 1;
+}
+.invoice-meta-date {
+  grid-column: 2;
+  grid-row: 1;
+}
+.invoice-meta-status {
+  grid-column: 1;
+  grid-row: 2;
+}
+.invoice-period-meta {
+  grid-column: 2;
+  grid-row: 2;
+}
+.invoice-meta-due {
+  grid-column: 1 / -1;
+  grid-row: 3;
 }
 .invoice-meta p,
 .invoice-totals p {
@@ -2015,6 +2046,12 @@ input[type="checkbox"] {
   display: flex;
   align-items: baseline;
   gap: 8px;
+  min-width: 0;
+}
+.invoice-meta .invoice-period-meta {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  gap: 6px 8px;
 }
 .invoice-meta span,
 .invoice-totals span,

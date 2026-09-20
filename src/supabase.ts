@@ -103,6 +103,8 @@ export interface InvoiceInput {
   patient_id?: string | null;
   invoice_date: string;
   due_date?: string | null;
+  from_date?: string | null;
+  to_date?: string | null;
   bill_to_name: string;
   bill_to_phone: string;
   bill_to_location?: string | null;

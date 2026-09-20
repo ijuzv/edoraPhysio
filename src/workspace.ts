@@ -98,6 +98,10 @@ export const workspaceHtml = `
           <label class="patient-map-field">Map to existing patient<select name="invoice_patient_id"><option value="">Select patient</option></select></label>
           <label>Invoice date <span class="required">*</span><input name="invoice_date" type="date" required></label>
           <label>Due date<input name="due_date" type="date"></label>
+          <div class="invoice-period full">
+            <label>From<input name="from_date" type="date" autocomplete="off"></label>
+            <label>To<input name="to_date" type="date" autocomplete="off"></label>
+          </div>
           <label>Client / patient name <span class="required">*</span><input name="bill_to_name" required maxlength="120"></label>
           <label>Phone number <span class="required">*</span><input name="bill_to_phone" required maxlength="20"></label>
           <label class="full">Location<input name="bill_to_location" maxlength="200"></label>
